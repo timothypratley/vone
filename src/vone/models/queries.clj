@@ -4,7 +4,8 @@
             [clj-time.format :as format]
             [clj-http.client :as client]
             [clojure.xml :as xml]
-            [ring.util.codec :as codec]))
+            [ring.util.codec :as codec]
+            [noir.session :as session]))
 
 (def base-url "http://www3.v1host.com/Tideworks/VersionOne/rest-1.v1")
 
@@ -42,10 +43,10 @@
 
 (defn xhr
   "XmlHttpRequest from VersionOne into a map"
-  [query username password]
+  [query]
   (println "DEBUG QUERY: " query)
   (let [params {:as :stream
-                :basic-auth [username password]}
+                :basic-auth [(session/get :username) (session/get :password)]}
         response (client/get (str base-url query) params)]
     (-> response
       :body
@@ -54,61 +55,62 @@
 
 (defn names
   "Retrieves a sorted seqence of asset names"
-  [username password asset]
+  [asset]
   ;TODO: filtering empty descriptions because there is a story status "Incomplete"!?!?
   (let [query (str "/Data/" asset
                    "?sel=Name&where=Description;AssetState!='Dead'&sort=Order")]
-    (map :Name (xhr query username password))))
+    (map :Name (xhr query))))
 
 (defn sprint-span
-  [username password sprint]
+  [sprint]
   (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint "'")]
-    (first (xhr query username password))))
+    (first (xhr query))))
 
 (defn for-sprint
   "Queries f for each sprint day"
-  [username password team sprint f]
+  [team sprint f]
   (let [team (codec/url-encode team)
         sprint (codec/url-encode sprint) 
-        span (sprint-span username password sprint)
+        span (sprint-span sprint)
         begin (parse-date (span :BeginDate))
         end (parse-date (span :EndDate))]
-    (map (partial f username password team sprint)
-         (take-while #(time/before? % end)
-           (filter (complement weekend?) (inc-date-stream begin))))))
+    (pmap #(apply vector %1 (f team sprint %2))
+          (iterate inc 1)
+          (take-while #(time/before? % end)
+            (filter (complement weekend?) (inc-date-stream begin))))))
 
 (defn parseDouble
   [s]
-  (if (nil? s)
-    0
-    (Double/parseDouble s)))
+  (if s
+    (Double/parseDouble s)
+    0))
 
 (defn todo-on
-  [username password team sprint date]
+  [team sprint date]
   (let [query (str "/Hist/Timebox?asof=" (tostr-date date)
                    "&where=Name='" sprint
                    "'&sel=Workitems[Team.Name='" team
                    "'].ToDo[AssetState!='Dead'].@Sum")]
-    (-> (xhr query username password)
+    (-> (xhr query)
       first
       vals
       first
       parseDouble)))
 
 (defn cumulative-on-status
-  [username password team sprint date status]
+  [team sprint date status]
   (let [query (str "/Hist/Timebox?asof=" (tostr-date date)
                    "&where=Name='" sprint
                    "'&sel=Workitems:PrimaryWorkitem[Team.Name='" team
                    "';Status.Name='" status
                    "'].Estimate[AssetState!='Dead'].@Sum")]
-    (-> (xhr query username password)
+    (-> (xhr query)
       first
       vals
       first
       parseDouble)))
 
 (defn cumulative-on
-  [names username password team sprint date]
-  (vec (map (partial cumulative-on-status username password team sprint date)
-            (map codec/url-encode names))))
+  [names team sprint date]
+  (vec (pmap (partial cumulative-on-status team sprint date)
+             (map codec/url-encode names))))
