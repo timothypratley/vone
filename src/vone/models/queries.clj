@@ -44,7 +44,6 @@
 (defn xhr
   "XmlHttpRequest from VersionOne into a map"
   [query]
-  (println "DEBUG QUERY: " query)
   (let [params {:as :stream
                 :basic-auth [(session/get :username) (session/get :password)]}
         response (client/get (str base-url query) params)]
@@ -85,6 +84,12 @@
     (Double/parseDouble s)
     0))
 
+(defn parseInt
+  [s]
+  (if s
+    (Integer/parseInt s)
+    0))
+
 (defn todo-on
   [team sprint date]
   (let [query (str "/Hist/Timebox?asof=" (tostr-date date)
@@ -95,7 +100,13 @@
       first
       vals
       first
-      parseDouble)))
+      parseDouble
+      vector)))
+
+(defn burndown
+  [team sprint]
+  (cons ["Day" "ToDo"]
+        (for-sprint team sprint todo-on)))
 
 (defn cumulative-on-status
   [team sprint date status]
@@ -114,3 +125,9 @@
   [names team sprint date]
   (vec (pmap (partial cumulative-on-status team sprint date)
              (map codec/url-encode names))))
+
+(defn cumulative
+  [team sprint]
+  (let [statuses (reverse (names "StoryStatus"))]
+	  (cons (cons "Day" statuses)
+	        (for-sprint team sprint (partial cumulative-on statuses)))))

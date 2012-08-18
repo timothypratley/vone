@@ -1,24 +1,28 @@
 google.load('visualization', '1.0', {'packages':['corechart']});
 google.setOnLoadCallback(drawChart);
 
-// Callback that creates and populates a data table, 
-// instantiates the pie chart, passes in the data and
-// draws it.
+function cb(response) {
+	console.log("yes");
+}
+
+function chart(element, url, chartType, options) {
+	new google.visualization.Query(url)
+		.send(function (response) {
+			var container = document.getElementById(element);
+			console.log('toot');
+			console.log(response.getDataTable());
+			if (response.isError()) {
+				google.visualization.errors.addErrorFromQueryResponse(container, response);
+				return;
+			}
+		
+			new chartType(container)
+				.draw(response.getDataTable(), options);
+		});
+}
+
 function drawChart() {
-
-	  // BURNDOWN
-	  var data = google.visualization.arrayToDataTable([
-	    ['Month',   'Bolivia', 'Ecuador', 'Madagascar', 'Papua New Guinea', 'Rwanda'],
-	    ['2004/05',    165,      938,         522,             998,           450],
-	    ['2005/06',    135,      1120,        599,             1268,          288],
-	    ['2006/07',    157,      1167,        587,             807,           397],
-	    ['2007/08',    139,      1110,        615,             968,           215],
-	    ['2008/09',    136,      691,         629,             1026,          366]
-	  ]);
-
-	  // Create and draw the visualization.
-	  var burndown = new google.visualization.AreaChart(document.getElementById('burndown'));
-	  burndown.draw(data, {
+    chart('burndown', '/burndown/TC+Sharks/TC1211', google.visualization.AreaChart, {
 	    title : 'Cumulative Flow - Story status over time',
 	    isStacked: false,
 	    areaOpacity: 0.0,
@@ -26,30 +30,16 @@ function drawChart() {
 	    height: 400,
 	    vAxis: {title: "Story Points"},
 	    hAxis: {title: "Day"}
-	  });
-
-	
-	  // CUMULATIVE FLOW
-	  var data = google.visualization.arrayToDataTable([
-	    ['Month',   'Bolivia', 'Ecuador', 'Madagascar', 'Papua New Guinea', 'Rwanda'],
-	    ['2004/05',    165,      938,         522,             998,           450],
-	    ['2005/06',    135,      1120,        599,             1268,          288],
-	    ['2006/07',    157,      1167,        587,             807,           397],
-	    ['2007/08',    139,      1110,        615,             968,           215],
-	    ['2008/09',    136,      691,         629,             1026,          366]
-	  ]);
-
-	  // Create and draw the visualization.
-	  var cumulative = new google.visualization.AreaChart(document.getElementById('cumulative'));
-	  cumulative.draw(data, {
+    });
+    chart('cumulative', '/cumulative/TC+Sharks/TC1211', google.visualization.AreaChart, {
 	    title : 'Cumulative Flow - Story status over time',
 	    isStacked: true,
 	    width: 600,
 	    height: 400,
 	    vAxis: {title: "Story Points"},
 	    hAxis: {title: "Day"}
-	  });
-
+	});
+    
 	  
 	  // PIE CHART
 	  // Create the data table.
