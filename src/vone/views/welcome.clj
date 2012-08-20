@@ -1,18 +1,26 @@
 (ns vone.views.welcome
-  (:require [vone.views.common :as common]
-            [noir.session :as session]
+  (:require [noir.session :as session]
             [noir.response :as response])
   (:use [noir.core]
         [hiccup.core]
         [hiccup.form-helpers]
         [hiccup.page-helpers]))
 
-(defpage "/welcome" []
-         (common/layout
-           [:p "Welcome to vone"]))
+(defpage "/" []
+  (html5
+    [:head
+     [:title "vone"]
+     (include-css "/css/reset.css")]
+    [:body
+     [:div.ng-view "Loading..."]
+     (include-js "https://www.google.com/jsapi")
+     (include-js "/js/angular-1.0.1.min.js")
+     (include-js "/js/angular-resource-1.0.1.min.js")
+     (include-js "/js/controllers.js")
+     (include-js "/js/vone.js")]))
 
 (defpage "/login" []
-  (common/layout
+  (html
     (form-to [:post "/login"]
              [:div (label "username" "Username") (text-field "username")]
              [:div (label "password" "Password") (password-field "password")]
@@ -28,33 +36,64 @@
          (println "logout")
          (session/clear!))
 
+
+(defpage "/about" []
+         (html
+           [:h1 "VersionOne Reporting"]
+           [:ul
+            [:li (link-to "/#/login" "Login")]
+            [:li (link-to "/#/retro" "Retrospective")]]))
+
 (defpage "/burndown" []
-  (common/layout
+  (html
     (form-to [:post "/burndown"]
              [:div (label "sprint" "Sprint") (text-field "sprint")]
              [:div (label "team" "Team") (text-field "team")]
              (submit-button "Get Burndown"))))
 
 (defpage "/cumulative" []
-  (common/layout
+  (html
     (form-to [:post "/cumulative"]
              [:div (label "sprint" "Sprint") (text-field "sprint")]
              [:div (label "team" "Team") (text-field "team")]
              (submit-button "Get Cumulative Flow"))))
 
-(defpage "/retro/:team/:sprint" []
-  (html5
-    [:head
-     [:title "vone"]
-     (include-css "/css/reset.css")]
-    [:body
-     [:div#wrapper
-      [:div#burndown {:style "width:400; height:300"}]
-      [:div#burndowns {:style "width:400; height:300"}]
-      [:div#cumulative {:style "width:400; height:300"}]
-      [:div#previous_cumulative {:style "width:400; height:300"}]
-      [:div#stories {:style "width:400; height:300"}]
-      [:div#customers {:style "width:400; height:300"}]]
-     (include-js "https://www.google.com/jsapi")
-     (include-js "/js/charts.js")]))
-  
+(defpage "/retro" []
+  (html
+    [:div [:select :ng-model="team" :ng-options="t in teams"
+           [:option {:value ""} "-- choose team --"]]
+          [:select :ng-model="sprint" :ng-options="s in sprints"
+           [:option {:value ""} "-- choose sprint --"]]]
+    [:div {:chart "Area"
+           :source "/burndown/TC+Sharks/TC1211"
+           :title "Burndown - Total ToDo Remaining"
+           :vtitle "ToDo Hours"
+           :htitle "Day"
+           :isstacked "false"   ;TODO: using a bool the value is lost
+           :areaopacity 0.0}]
+    [:div {:chart "Area"
+           :source "/burndown/TC+Sharks/TC1210"
+           :title "Burndown Comparison"
+           :vtitle "ToDo Hours"
+           :htitle "Day"
+           :isstacked "false"
+           :areaopacity 0.0}]
+    [:div {:chart "Area"
+           :source "/cumulative/TC+Sharks/TC1211"
+           :title "Cumulative Flow - Story Status Over Time"
+           :vAxis {:title "Story Points"}
+           :hAxis {:title "Day"}
+           :isStacked "true"
+           :areaOpacity 1.0}]
+    [:div {:chart "Area"
+           :source "/cumulative/TC+Sharks/TC1210"
+           :title "Previous Cumulative Flow"
+           :vtitle "Story Points"
+           :htitle "Day"
+           :isStacked "true"
+           :areaOpacity 1.0}]
+    [:div#stories {:style "width:800; height:400"}]
+    [:div {:chart "Pie"
+           :source "/customers/TC+Sharks/TC1211"
+           :title "Customer Focus"}]))
+

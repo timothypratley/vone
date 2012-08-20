@@ -2,19 +2,22 @@
   (:use [vone.models.queries]
         [clojure.data.csv]
         [noir.core]
-        [noir.response :only [redirect json]]))
+        [noir.response :only [json redirect content-type status]]))
 
 (defn csv
-  [content]
-  (doto (java.io.StringWriter.)
-    (write-csv content)
-    (.toString)))
+  [content filename]
+  (assoc-in 
+    (content-type "text/csv"
+      (str (doto (java.io.StringWriter.) (write-csv content))))
+    [:headers "Content-Disposition"]
+    (str "attachment;filename=" filename ".csv")))
 
 (defn reqId
   [tqx]
   (if tqx
-    (if-let [match (re-find #"reqId:(\d+)" tqx)]
-      (parseInt (second match)))))
+    (let [match (re-find #"reqId:(\d+)" tqx)]
+      (parseInt (second match)))
+    0))
 
 (defn tabulate
   [content]
@@ -37,7 +40,7 @@
 (defpage [:post "/burndown"] {:keys [team sprint]}
   (redirect (str "/burndown/" team "/" sprint)))
 (defpage "/csv/burndown/:team/:sprint" {:keys [team sprint]}
-  (csv (burndown team sprint)))
+  (csv (burndown team sprint) (str team "_" sprint)))
 (defpage "/burndown/:team/:sprint" {:keys [team sprint tqx]}
   (datasource tqx (burndown team sprint)))
 
@@ -45,6 +48,6 @@
 (defpage [:post "/cumulative"] {:keys [team sprint]}
   (redirect (str "/cumulative/" team "/" sprint)))
 (defpage "/csv/cumulative/:team/:sprint" {:keys [team sprint]}
-  (csv (cumulative team sprint)))
+  (csv (cumulative team sprint) (str team "_" sprint)))
 (defpage "/cumulative/:team/:sprint" {:keys [team sprint tqx]}
   (datasource tqx (cumulative team sprint)))
