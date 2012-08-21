@@ -7,6 +7,8 @@
             [ring.util.codec :as codec]
             [noir.session :as session]))
 
+;TODO: cache answers, use with-connection-pool from clj-http
+
 (def base-url "http://www3.v1host.com/Tideworks/VersionOne/rest-1.v1")
 
 ; http://biesnecker.com/infinite-lazy-seqs-clojure-joda-time.html

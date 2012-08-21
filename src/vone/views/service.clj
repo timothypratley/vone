@@ -1,8 +1,10 @@
 (ns vone.views.service
   (:use [vone.models.queries]
         [clojure.data.csv]
+        [clojure.string :as str]
         [noir.core]
-        [noir.response :only [json redirect content-type status]]))
+        [noir.response :only [json redirect content-type status]]
+        [slingshot.slingshot :only [try+]]))
 
 (defn csv
   [content filename]
@@ -42,7 +44,10 @@
 (defpage "/csv/burndown/:team/:sprint" {:keys [team sprint]}
   (csv (burndown team sprint) (str team "_" sprint)))
 (defpage "/burndown/:team/:sprint" {:keys [team sprint tqx]}
-  (datasource tqx (burndown team sprint)))
+  (try+
+    (datasource tqx (burndown team sprint))
+    (catch [:status 401] []
+      (status 401 "Login"))))
 
 ;TODO: make submit go the right place first instead of redirecting
 (defpage [:post "/cumulative"] {:keys [team sprint]}
@@ -50,4 +55,13 @@
 (defpage "/csv/cumulative/:team/:sprint" {:keys [team sprint]}
   (csv (cumulative team sprint) (str team "_" sprint)))
 (defpage "/cumulative/:team/:sprint" {:keys [team sprint tqx]}
-  (datasource tqx (cumulative team sprint)))
+  (try+
+    (datasource tqx (cumulative team sprint))
+    (catch [:status 401] []
+      (status 401 "Login"))))
+
+(defpage "/teams" []
+  (try+
+    (json (sort-by str/upper-case (names "Team")))
+    (catch [:status 401] []
+      (status 401 "Please Login"))))

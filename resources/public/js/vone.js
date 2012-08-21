@@ -1,10 +1,29 @@
-angular.module('vone', [])
+angular.module('vone', ['http-auth-interceptor'])
     .config(function ($routeProvider, $httpProvider) {
         $routeProvider
             .when("/about", {templateUrl: "/about", controller: AboutCtrl})
             .when("/login", {templateUrl: "/login", controller: LoginCtrl})
             .when("/retro", {templateUrl: "/retro", controller: RetroCtrl})
             .otherwise({redirectTo: "/about"});
+    })
+    .directive('authenticate', function($log) {
+    	return function(scope, elem, attrs) {
+    		$log.info("inauthenticate");
+    		var login = elem.find('#loginbox'),
+    			main = elem.find('#content');
+    		
+    		login.hide();
+    		
+    		scope.$on('event:auth-loginRequired', function() {
+    			login.slideDown('slow');
+    		});
+    		scope.$on('event:auth-loginConfirmed', function() {
+    			login.slideDown('slow', function(){
+    				main.show();
+    				login.slideUp();
+    			});
+    		});
+    	};
     })
     .directive('chart', function($log) {
         return function(scope, elem, attrs) {

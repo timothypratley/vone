@@ -2,22 +2,25 @@ function AboutCtrl() {
 
 }
 
-function LoginCtrl($scope, $http, $log, $location) {
+function LoginCtrl($scope, $http, $log, authService) {
     $scope.submit = function () {
+    	$log.info("called login");
         $http.post("/login", null,
                 {params: {username: $scope.username, password: $scope.password}})
         .success(function (data, status) {
-            $log.info(data, status);
-            $scope.$emit("LoginSuccessEvent", $scope.username);
-            $location.path("/retro");
+        	$log.info("Login Confirmed");
+        	authService.loginConfirmed();
         })
         .error($log.error);
     }
 }
 
 function RetroCtrl($scope, $http, $log) {
-    // TODO: $http callback
-    $scope.teams = ["TC Sharks", "TC Jets"];
-    $scope.sprints = ["TC1211", "TC1210"];
+	$http.get("/teams", null)
+	.success(function (data, status) {
+		$log.info("Got teams");
+		$scope.teams = data;
+	})
+	.error($log.error);
 }
 

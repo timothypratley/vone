@@ -11,26 +11,35 @@
     [:head
      [:title "vone"]
      (include-css "/css/reset.css")]
-    [:body
-     [:div.ng-view "Loading..."]
+    [:body {:authenticate "loginbox"}
+     [:div#loginbox
+      [:form {:ng-controller "LoginCtrl"
+              :ng-submit "submit()"
+              :novalidate true}
+       [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
+       [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
+       (submit-button "VersionOne Login")]]
+     [:div#content.ng-view "Loading..."]
+     (include-js "/js/jquery-1.8.0.min.js")
      (include-js "https://www.google.com/jsapi")
      (include-js "/js/angular-1.0.1.min.js")
      (include-js "/js/angular-resource-1.0.1.min.js")
+     (include-js "/js/http-auth-interceptor.js")
      (include-js "/js/controllers.js")
      (include-js "/js/vone.js")]))
 
 (defpage "/login" []
   (html
-    (form-to [:post "/login"]
-             [:div (label "username" "Username") (text-field "username")]
-             [:div (label "password" "Password") (password-field "password")]
-             (submit-button "VersionOne Login"))))
+    [:form {:ng-submit "submit()"
+           :novalidate true} 
+          [:div (label "username" "Username") (text-field "username")]
+          [:div (label "password" "Password") (password-field "password")]
+          (submit-button "VersionOne Login")]))
 
 (defpage [:post "/login"] {:keys [username password]}
   (println "login" username)
   (session/put! :username username)
-  (session/put! :password password)
-  (response/redirect "/burndown"))
+  (session/put! :password password))
 
 (defpage [:post "/logout"] []
          (println "logout")
@@ -60,7 +69,8 @@
 
 (defpage "/retro" []
   (html
-    [:div [:select :ng-model="team" :ng-options="t in teams"
+    [:div [:select {:ng-model "team"
+                    :ng-options "t for t in teams"}
            [:option {:value ""} "-- choose team --"]]
           [:select :ng-model="sprint" :ng-options="s in sprints"
            [:option {:value ""} "-- choose sprint --"]]]
