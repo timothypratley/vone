@@ -69,41 +69,56 @@
 
 (defpage "/retro" []
   (html
-    [:div [:select {:ng-model "team"
-                    :ng-options "t for t in teams"}
-           [:option {:value ""} "-- choose team --"]]
-          [:select :ng-model="sprint" :ng-options="s in sprints"
-           [:option {:value ""} "-- choose sprint --"]]]
-    [:div {:chart "Area"
+    [:h1 "Retrospective: {{sprint.team}} {{sprint.sprint}}"]
+    [:div [:select {:ng-model "sprint"
+                    :ng-options "ts.sprint group by ts.team for ts in teamSprints"}
+           [:option {:value ""} "-- choose team --"]]]
+    [:hr]
+    [:div {:title "Burndown - Total ToDo Remaining"
+           :chart "Area"
            :source "/burndown/TC+Sharks/TC1211"
-           :title "Burndown - Total ToDo Remaining"
            :vtitle "ToDo Hours"
            :htitle "Day"
            :isstacked "false"   ;TODO: using a bool the value is lost
            :areaopacity 0.0}]
-    [:div {:chart "Area"
+    [:div {:title "Burndown Comparison"
+           :chart "Area"
            :source "/burndown/TC+Sharks/TC1210"
-           :title "Burndown Comparison"
            :vtitle "ToDo Hours"
            :htitle "Day"
            :isstacked "false"
            :areaopacity 0.0}]
-    [:div {:chart "Area"
+    [:div {:title "Cumulative Flow - Story Status Over Time"
+           :chart "Area"
            :source "/cumulative/TC+Sharks/TC1211"
-           :title "Cumulative Flow - Story Status Over Time"
-           :vAxis {:title "Story Points"}
-           :hAxis {:title "Day"}
-           :isStacked "true"
-           :areaOpacity 1.0}]
-    [:div {:chart "Area"
-           :source "/cumulative/TC+Sharks/TC1210"
-           :title "Previous Cumulative Flow"
            :vtitle "Story Points"
            :htitle "Day"
            :isStacked "true"
-           :areaOpacity 1.0}]
-    [:div#stories {:style "width:800; height:400"}]
+           :areaOpacity 0.8}]
+    [:div {:title "Previous Cumulative Flow"
+           :chart "Area"
+           :source "/cumulative/TC+Sharks/TC1210"
+           :vtitle "Story Points"
+           :htitle "Day"
+           :isStacked "true"
+           :areaOpacity 0.8}]
+    [:div {:title "Velocity - Story Points per Sprint"
+           :chart "Column"
+           :source "/velocity/TC+Sharks/TC1211"
+           :vtitle "Story Points"
+           :htitle "Sprint"}]
+    [:div {:title "Estimation"
+           :chart "Table"
+           :source "/estimates/TC+Sharks/TC1211"}]
+    [:div {:style "width:800; height:400"} "Stories"]
+    [:div "Splits"]
     [:div {:chart "Pie"
            :source "/customers/TC+Sharks/TC1211"
-           :title "Customer Focus"}]))
+           :title "Customer Focus - Points per Customer"}]
+    [:div "Summary"]
+    
+    [:div {:chart "Pie"
+           :source "/customers/TC+Sharks/TC1212"
+           :title "Next Sprint"}]
+    [:div "Epics"]))
 

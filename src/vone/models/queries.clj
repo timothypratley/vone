@@ -1,5 +1,4 @@
 (ns vone.models.queries
-  (:use [clojure.pprint])
   (:require [clj-time.core :as time]
             [clj-time.format :as format]
             [clj-http.client :as client]
@@ -133,3 +132,31 @@
   (let [statuses (reverse (names "StoryStatus"))]
 	  (cons (cons "Day" statuses)
 	        (for-sprint team sprint (partial cumulative-on statuses)))))
+
+(defn sum [m story]
+  (update-in m [(:Parent.Name story)] (fnil + 0) (parseDouble (:Estimate story)))) 
+(defn customers
+  [team sprint]
+  (cons ["Customer" "Story Points"]
+	  ; TODO: where should url-encode happen?
+	  (let [query (str "/Data/PrimaryWorkitem?where=Timebox.Name='" (codec/url-encode sprint)
+	                   "';Team.Name='" (codec/url-encode team)
+	                   "';AssetState!='Dead'&sel=Estimate,Parent.Name")]
+	    (->> (xhr query)
+	      (reduce sum {})))))
+
+;TODO: collapse is dropping important stuff!
+;and angular group by is not what I expect
+(defn build [m sprint]
+  (if-let [teams (get-in sprint [:Workitems:PrimaryWorkitem.Team.Name :content])]
+    (reduce #(update-in %1 [%2] (fnil conj (sorted-set)) (:Name sprint))
+            m teams)
+    m))
+(defn team-sprints
+  []
+  (let [query "/Data/Timebox?sel=Name,Workitems:PrimaryWorkitem.Team.Name&where=Workitems:PrimaryWorkitem[Team.Name].@Count!='0'"]
+      (for [x (reduce build {} (xhr query))
+            y (second x)]
+                {:team (first x)
+                 :sprint y})))
+

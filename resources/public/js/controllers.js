@@ -16,11 +16,11 @@ function LoginCtrl($scope, $http, $log, authService) {
 }
 
 function RetroCtrl($scope, $http, $log) {
-	$http.get("/teams", null)
-	.success(function (data, status) {
-		$log.info("Got teams");
-		$scope.teams = data;
-	})
-	.error($log.error);
+	$http.get("/team-sprints", null)
+		.success(function (data, status) {
+			$log.info("Got team sprints");
+			$scope.teamSprints = data;
+		})
+		.error($log.error);
 }
 

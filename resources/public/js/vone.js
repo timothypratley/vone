@@ -57,6 +57,8 @@ angular.module('vone', ['http-auth-interceptor'])
             query(attrs.source);
             //TODO: why does this pass undefined?
             //scope.$watch(attrs.source, query, true);
+            //TODO: might be better off using a ChartWrapper
+            //https://developers.google.com/chart/interactive/docs/reference#chartwrapperobject
         };
     })
     .run(function () {
