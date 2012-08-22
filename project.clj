@@ -6,5 +6,6 @@
                            [slingshot "0.10.3"]
                            [clj-time "0.4.4"]
                            [org.clojure/data.csv "0.1.2"]]
+            :dev-dependencies [[appengine-magic "0.5.0"]]
             :main vone.server)
 
