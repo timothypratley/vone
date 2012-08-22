@@ -4,6 +4,8 @@
   <version>1</version>
   <static-files/>
   <resource-files/>
+  <sessions-enabled>true</sessions-enabled>
+  <async-session-persistence enabled="true" />
 
   <threadsafe>true</threadsafe>
 

@@ -42,6 +42,7 @@
   [x]
   (reduce collapse-asset [] (x :content)))
 
+;TODO: use clj-http-lite or appengine-magic url-fetch to avoid blacklisting
 (defn xhr
   "XmlHttpRequest from VersionOne into a map"
   [query]

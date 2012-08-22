@@ -19,13 +19,12 @@
 (def ring-handler
   (httpsession/wrap-http-session-store
     (noir-gae/gae-handler
-      {:session-store (httpsession/http-session-store "my-app-session")})))
+      {:session-store (httpsession/http-session-store "vone-session")})))
 
 ;; def the appengine app
-(gae/def-appengine-app my-site ring-handler
-  :war-root "/Users/me/Devel/my-app/war")
+(gae/def-appengine-app vone-site ring-handler)
 
 ;; entry point
 (defn -service [this request response]
-  ((make-servlet-service-method my-site) this request response))
+  ((make-servlet-service-method vone-site) this request response))
 
