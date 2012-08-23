@@ -10,7 +10,12 @@
   (html5
     [:head
      [:title "vone"]
-     (include-css "/css/reset.css")]
+     [:meta {:name "viewport"
+             :content "width=device-width"
+             :initial-scale "1.0"}]
+     (include-css "/css/reset.css")
+     (include-css "/css/bootstrap.min.css")
+     (include-css "/css/bootstrap-responsive.min.css")]
     [:body {:authenticate "loginbox"}
      [:div#loginbox
       [:form {:ng-controller "LoginCtrl"
@@ -25,6 +30,7 @@
      (include-js "/js/angular-1.0.1.min.js")
      (include-js "/js/angular-resource-1.0.1.min.js")
      (include-js "/js/http-auth-interceptor.js")
+     (include-js "/js/bootstrap.min.js")
      (include-js "/js/controllers.js")
      (include-js "/js/vone.js")]))
 

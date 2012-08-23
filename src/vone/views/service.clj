@@ -79,7 +79,11 @@
       (status 401 "Login"))))
 
 (defpage "/team-sprints" []
+         ;TODO: find a better way to propigate 401
+ (try
   (try+
     (json (team-sprints))
     (catch [:status 401] []
-      (status 401 "Please login"))))
+      (status 401 "Please login")))
+         (catch Exception e
+           (status 401 "Bah"))))

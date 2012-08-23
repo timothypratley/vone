@@ -8,3 +8,4 @@ pom.xml
 .classpath
 .lein-failures
 *~
+*.swp

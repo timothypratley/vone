@@ -10,14 +10,25 @@
 
 (def base-url "http://www3.v1host.com/Tideworks/VersionOne/rest-1.v1")
 
+;TODO: move these to a helper
 ; http://biesnecker.com/infinite-lazy-seqs-clojure-joda-time.html
 ;; basic functions to increment or decrement a date
-(defn inc-date [#^org.joda.time.DateTime ds] (.plusDays ds 1))
-(defn dec-date [#^org.joda.time.DateTime ds] (.minusDays ds 1))
+(defn inc-date
+  [#^org.joda.time.DateTime ds]
+  (.plusDays ds 1))
+(defn dec-date
+  [#^org.joda.time.DateTime ds]
+  (.minusDays ds 1))
 ;; generate infinite streams of LocalDate objects starting with start-ds
-(defn inc-date-stream [#^org.joda.time.DateTime start-ds] (iterate inc-date start-ds))
-(defn dec-date-stream [#^org.joda.time.DateTime start-ds] (iterate dec-date start-ds))
-(defn weekend? [#^org.joda.time.DateTime ds] (> (.get (.dayOfWeek ds)) 5))
+(defn inc-date-stream
+  [#^org.joda.time.DateTime start-ds]
+  (iterate inc-date start-ds))
+(defn dec-date-stream
+  [#^org.joda.time.DateTime start-ds]
+  (iterate dec-date start-ds))
+(defn weekend?
+  [#^org.joda.time.DateTime ds]
+  (> (.get (.dayOfWeek ds)) 5))
 
 (defn parse-date
   [date]
@@ -42,15 +53,13 @@
   [x]
   (reduce collapse-asset [] (x :content)))
 
-;TODO: use clj-http-lite or appengine-magic url-fetch to avoid blacklisting
 (defn xhr
   "XmlHttpRequest from VersionOne into a map"
   [query]
-  (let [params {:as :stream
-                :basic-auth [(session/get :username) (session/get :password)]}
-        response (client/get (str base-url query) params)]
-    (-> response
-      :body
+  (let [params {:basic-auth [(session/get :username) (session/get :password)]}
+        response (client/get (str base-url query) params)
+        stream (java.io.ByteArrayInputStream. (.getBytes (response :body)))]
+    (-> stream 
       xml/parse
       collapse)))
 
