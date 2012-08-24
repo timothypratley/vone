@@ -75,7 +75,7 @@
 
 (defpage "/retro" []
   (html
-    [:h1 "Retrospective: {{sprint.team}} {{sprint.sprint}}"]
+    [:h1 "Retrospective: {{sprint.team}}"]
     [:div [:select {:ng-model "sprint"
                     :ng-options "ts.sprint group by ts.team for ts in teamSprints"}
            [:option {:value ""} "-- choose team --"]]]
