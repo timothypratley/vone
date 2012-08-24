@@ -8,20 +8,12 @@ angular.module('vone', ['http-auth-interceptor'])
     })
     .directive('authenticate', function($log) {
     	return function(scope, elem, attrs) {
-    		$log.info("inauthenticate");
-    		var login = elem.find('#loginbox'),
-    			main = elem.find('#content');
-    		
-    		login.hide();
-    		
+    		var login = elem.find('#loginbox');
     		scope.$on('event:auth-loginRequired', function() {
-    			login.slideDown('slow');
+    			login.modal('show');
     		});
     		scope.$on('event:auth-loginConfirmed', function() {
-    			login.slideDown('slow', function(){
-    				main.show();
-    				login.slideUp();
-    			});
+    			login.modal('hide');
     		});
     	};
     })

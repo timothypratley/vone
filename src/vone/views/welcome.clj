@@ -13,17 +13,52 @@
      [:meta {:name "viewport"
              :content "width=device-width"
              :initial-scale "1.0"}]
-     (include-css "/css/reset.css")
+     [:link {:rel "icon"
+             :href "/img/favicon.ico"
+             :type "image/x-icon"}]
+     [:link {:rel "shortcut"
+             :href "/img/favicon.ico"
+             :type "image/x-icon"}]
      (include-css "/css/bootstrap.min.css")
      (include-css "/css/bootstrap-responsive.min.css")]
+    
     [:body {:authenticate "loginbox"}
-     [:div#loginbox
-      [:form {:ng-controller "LoginCtrl"
-              :ng-submit "submit()"
-              :novalidate true}
-       [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
-       [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
-       (submit-button "VersionOne Login")]]
+     
+		 [:header.navbar
+      [:div.navbar-inner
+       [:a.brand {:href "/"} [:strong "Vone"]]
+       [:ul.nav
+        [:li.divider-vertical]
+        [:li (link-to "/" "Home")]
+        [:li.divider-vertical]
+        [:li (link-to "/#/retro" "Retrospective")]
+        [:li.divider-vertical]
+        [:li (link-to "/#/proj" "Projection")]
+        [:li.divider-vertical]]
+       [:div.login.ng-cloak.pull-right {:ng-show "!username"}
+        (link-to "#/login" "Login")]
+       [:div.logout.ng-cloak {:ng-show "username"}
+        [:span "{{username}}"]
+        (submit-button {:ng-click "logout()"} "logout")]]]
+   
+     [:div#loginbox.modal.hide.fade {:tabindex -1
+                                     :role "dialog"
+                                     :aria-labelledby "Login"
+                                     :aria-hidden "true"}
+      [:div.modal-header
+       [:button.close {:type "button"
+                       :data-dismiss "modal"
+                       :aria-hidden "true"} "x"]]
+      [:div.modal-body
+       [:form {:ng-controller "LoginCtrl"
+               :ng-submit "submit()"
+               :novalidate true}
+        [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
+        [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]      
+        (submit-button "VersionOne Login")]]
+      ;TODO: should have a modal-footer with submit, but then no form?
+      ]
+     
      [:div#content.ng-view "Loading..."]
      (include-js "/js/jquery-1.8.0.min.js")
      (include-js "https://www.google.com/jsapi")
