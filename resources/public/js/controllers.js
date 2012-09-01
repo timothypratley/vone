@@ -16,6 +16,8 @@ function LoginCtrl($scope, $http, $log, authService) {
 }
 
 function RetroCtrl($scope, $http, $log) {
+	$scope.teamSprints = [];
+	$scope.sprint = {};
 	$http.get("/team-sprints", null)
 		.success(function (data, status) {
 			$log.info("Got team sprints");
