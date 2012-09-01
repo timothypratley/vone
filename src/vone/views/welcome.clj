@@ -37,7 +37,7 @@
         [:li.divider-vertical]]
        [:div.login.ng-cloak.pull-right {:ng-show "!username"}
         (link-to "#/login" "Login")]
-       [:div.logout.ng-cloak {:ng-show "username"}
+       [:div.logout.ng-cloak.pull-right {:ng-show "username"}
         [:span "{{username}}"]
         (submit-button {:ng-click "logout()"} "logout")]]]
    
