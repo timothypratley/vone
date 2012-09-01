@@ -66,6 +66,7 @@
      (include-js "/js/angular-resource-1.0.1.min.js")
      (include-js "/js/http-auth-interceptor.js")
      (include-js "/js/bootstrap.min.js")
+     (include-js "/js/charts.js")
      (include-js "/js/controllers.js")
      (include-js "/js/vone.js")]))
 
@@ -80,11 +81,13 @@
 (defpage [:post "/login"] {:keys [username password]}
   (println "login" username)
   (session/put! :username username)
-  (session/put! :password password))
+  (session/put! :password password)
+  (response/json username))
 
 (defpage [:post "/logout"] []
          (println "logout")
-         (session/clear!))
+         (session/clear!)
+         (response/json "Ok"))
 
 
 (defpage "/about" []
@@ -115,51 +118,25 @@
                     :ng-options "ts.sprint group by ts.team for ts in teamSprints"}
            [:option {:value ""} "-- choose team --"]]]
     [:hr]
-    [:div {:title "Burndown - Total ToDo Remaining"
-           :chart "Area"
-           :source "/burndown/TC+Sharks/TC1211"
-           :vtitle "ToDo Hours"
-           :htitle "Day"
-           :isstacked "false"   ;TODO: using a bool the value is lost
-           :areaopacity 0.0}]
-    [:div {:title "Burndown Comparison"
-           :chart "Area"
-           :source "/burndown/TC+Sharks/TC1210"
-           :vtitle "ToDo Hours"
-           :htitle "Day"
-           :isstacked "false"
-           :areaopacity 0.0}]
-    [:div {:title "Cumulative Flow - Story Status Over Time"
-           :chart "Area"
-           :source "/cumulative/TC+Sharks/TC1211"
-           :vtitle "Story Points"
-           :htitle "Day"
-           :isStacked "true"
-           :areaOpacity 0.8}]
-    [:div {:title "Previous Cumulative Flow"
-           :chart "Area"
-           :source "/cumulative/TC+Sharks/TC1210"
-           :vtitle "Story Points"
-           :htitle "Day"
-           :isStacked "true"
-           :areaOpacity 0.8}]
-    [:div {:title "Velocity - Story Points per Sprint"
-           :chart "Column"
-           :source "/velocity/TC+Sharks/TC1211"
-           :vtitle "Story Points"
-           :htitle "Sprint"}]
-    [:div {:title "Estimation"
-           :chart "Table"
+    [:div {:burndown "Burndown - Total ToDo Remaining"
+           :source "{{sprint.team}}/{{sprint.sprint}}"}]
+    [:div {:burndown "Burndown Comparison"
+           :source "{{sprint.team}}/{{sprint.sprint}}"}]
+    [:div {:cumulative "Cumulative Flow - Story Status Over Time"
+           :source "{{sprint.team}}/{{sprint.prev_sprint}}"}]
+    [:div {:cumulative "Previous Cumulative Flow"
+           :source "{{sprint.team}}/{{sprint.prev_sprint}}"}]
+    [:div {:velocity "Velocity - Story Points per Sprint"}]
+    [:div {:estimates "Estimation"
+           :chart "DataTable"
            :source "/estimates/TC+Sharks/TC1211"}]
     [:div {:style "width:800; height:400"} "Stories"]
     [:div "Splits"]
-    [:div {:chart "Pie"
-           :source "/customers/TC+Sharks/TC1211"
+    [:div {:chart "PieChart"
+           :source "/customers/{{sprint.team}}/{{sprint.sprint}}"
            :title "Customer Focus - Points per Customer"}]
     [:div "Summary"]
-    
-    [:div {:chart "Pie"
+    [:div {:chart "PieChart"
            :source "/customers/TC+Sharks/TC1212"
            :title "Next Sprint"}]
     [:div "Epics"]))
-
