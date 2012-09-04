@@ -15,13 +15,13 @@ function createChart(scope, elem, attrs, options) {
 	o.width=800;
 	o.height=400;
 
-	query = function(sprint) {
-		if (!sprint.team || !sprint.sprint) {
+	query = function() {
+		if (!scope.team || !scope.sprint) {
 			// TODO: how to clear an element?
 			return;
 		}
 			
-		var url = o.api + '/' + sprint.team + '/' + sprint.sprint;
+		var url = o.api + '/' + scope.team + '/' + scope.sprint;
 		
 		// TODO: remove
     	console.log("Query " + url);
@@ -38,6 +38,7 @@ function createChart(scope, elem, attrs, options) {
                 }
             });
     }
+    scope.$watch("team", query, true);
     scope.$watch("sprint", query, true);
     //TODO: might be better off using a ChartWrapper
     //https://developers.google.com/chart/interactive/docs/reference#chartwrapperobject

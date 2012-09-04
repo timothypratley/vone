@@ -35,9 +35,10 @@
         ;google chart wants it for pie charts
         table (if (empty? columnTypes)
                 t
-                (update-in t [:cols] (fn [cols]
-                                       (map #(assoc %1 :type %2) cols columnTypes))))]
-    (json {:reqId (reqId tqx)
+                (update-in t [:cols]
+                           (fn [cols]
+                             (map #(assoc %1 :type %2) cols columnTypes))))]
+    (json {:reqId  (reqId tqx)
            :table table})))
     
 ;TODO: make submit go the right place first instead of redirecting
@@ -58,7 +59,10 @@
   (csv (cumulative team sprint) (str "cumulative_" team "_" sprint)))
 (defpage "/cumulative/:team/:sprint" {:keys [team sprint tqx]}
   (try+
-    (datasource tqx (cumulative team sprint))
+    (let [content (cumulative team sprint)]
+      (datasource tqx content))
+    ; TODO: this doesn't work - make a wrapper for all services
+    ; which need authentication
     (catch [:status 401] []
       (status 401 "Login"))))
 
@@ -79,11 +83,16 @@
       (status 401 "Login"))))
 
 (defpage "/team-sprints" []
-         ;TODO: find a better way to propigate 401
+         ;TODO: find a better way to propogate 401
  (try
   (try+
     (json (team-sprints))
     (catch [:status 401] []
       (status 401 "Please login")))
          (catch Exception e
+           (println "whoops " e)
            (status 401 "Bah"))))
+
+(defpage "/velocity/:team/:sprint" {:keys [team sprint]}
+         (json (velocity team sprint)))
+

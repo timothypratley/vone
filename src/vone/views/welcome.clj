@@ -113,30 +113,37 @@
 
 (defpage "/retro" []
   (html
-    [:h1 "Retrospective: {{sprint.team}}"]
-    [:div [:select {:ng-model "sprint"
-                    :ng-options "ts.sprint group by ts.team for ts in teamSprints"}
-           [:option {:value ""} "-- choose team --"]]]
+    [:h1 "Retrospective: {{sprint.Name}}"]
+    [:div
+     [:select {:ng-model "team"
+               :ng-options "key as key for (key, value) in teamSprints"}
+      [:option {:value ""} "-- choose team --"]]
+     [:select {:ng-model "sprint"
+               :ng-options "s for s in sprints"
+               :ng-visible "sprints"}
+      [:option {:value ""} "-- choose sprint --"]]
+     [:h1 "{{sprint.start}} {{sprint.end}}"]]
     [:hr]
-    [:div {:burndown "Burndown - Total ToDo Remaining"
-           :source "{{sprint.team}}/{{sprint.sprint}}"}]
-    [:div {:burndown "Burndown Comparison"
-           :source "{{sprint.team}}/{{sprint.sprint}}"}]
-    [:div {:cumulative "Cumulative Flow - Story Status Over Time"
-           :source "{{sprint.team}}/{{sprint.prev_sprint}}"}]
-    [:div {:cumulative "Previous Cumulative Flow"
-           :source "{{sprint.team}}/{{sprint.prev_sprint}}"}]
-    [:div {:velocity "Velocity - Story Points per Sprint"}]
-    [:div {:estimates "Estimation"
-           :chart "DataTable"
-           :source "/estimates/TC+Sharks/TC1211"}]
-    [:div {:style "width:800; height:400"} "Stories"]
-    [:div "Splits"]
-    [:div {:chart "PieChart"
-           :source "/customers/{{sprint.team}}/{{sprint.sprint}}"
-           :title "Customer Focus - Points per Customer"}]
-    [:div "Summary"]
-    [:div {:chart "PieChart"
-           :source "/customers/TC+Sharks/TC1212"
-           :title "Next Sprint"}]
-    [:div "Epics"]))
+    [:div.report {:ng-visible "team && sprint"}
+     [:div {:burndown "Burndown - Total ToDo Remaining"
+            :source "sprint"}]
+     [:div {:burndown "Burndown Comparison"
+            :source "sprint"}]
+     [:div {:cumulative "Cumulative Flow - Story Status Over Time"
+            :source "sprint"}]
+     [:div {:cumulative "Previous Cumulative Flow"
+            :source "sprint"}]
+     [:div {:velocity "Velocity - Story Points per Sprint"}]
+     [:div {:estimates "Estimation"
+            :source ""}]
+     [:div {:style "width:800; height:400"} "Stories"]
+     [:div "Splits"]
+     [:div {:chart "PieChart"
+            :source "/customers/{{sprint.Team}}/{{sprint.Name}}"
+            :title "Customer Focus - Points per Customer"}]
+     [:div "Summary"]
+     [:div {:chart "PieChart"
+            :source "/customers/TC+Sharks/TC1212"
+            :title "Next Sprint"}]
+     [:div "Epics"]]))
+
