@@ -199,11 +199,14 @@
      ((keyword (codec/url-decode velocity-field)) sprint)]))
 
 (defn velocity
-  [team]
+  [team sprint]
   (cons ["Sprint" "Story Points"]
         (let [sum-story-points (str "Workitems:PrimaryWorkitem[Team.Name='" (codec/url-encode team)
                                     "'].Estimate[AssetState!='Dead'].@Sum")
               query (str "/Data/Timebox?sel=Name," sum-story-points
                          "&where=" sum-story-points
-                         ">'0'&sort=EndDate")]
-          (xhre query (partial velocity-extract sum-story-points)))))
+                         ">'0'&sort=EndDate")
+              results (xhre query (partial velocity-extract sum-story-points))
+              before #(<= 0 (compare sprint (first %)))]
+          (take-last 5
+                (take-while before results)))))

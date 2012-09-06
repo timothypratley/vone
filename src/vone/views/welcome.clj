@@ -125,23 +125,16 @@
      [:h1 "{{sprint.start}} {{sprint.end}}"]]
     [:hr]
     [:div.report {:ng-visible "team && sprint"}
-     [:div {:burndown "Burndown - Total ToDo Remaining"
-            :source "sprint"}]
-     [:div {:burndown "Burndown Comparison"
-            :source "sprint"}]
-     [:div {:cumulative "Cumulative Flow - Story Status Over Time"
-            :source "sprint"}]
-     [:div {:cumulative "Previous Cumulative Flow"
-            :source "sprint"}]
-     [:div {:velocity "Velocity - Story Points per Sprint"}]
-     [:div {:estimates "Estimation"
-            :source ""}]
-     [:div {:style "width:800; height:400"} "Stories"]
+     [:div {:chart "burndown"}]
+     [:div {:chart "burndownComparison"}]
+     [:div {:chart "cumulative"}]
+     [:div {:chart "cumulativePrevious"}]
+     [:div {:chart "velocity"}]
+     [:div {:chart "estimates"}]
+     [:div "Stories"]
      [:div "Splits"]
-     [:div {:customers "Customer Focus - Points per Customer"
-            :source "/customers/{{sprint.Team}}/{{sprint.Name}}"}]
+     [:div {:chart "customers"}]
      [:div "Summary"]
-     [:div {:customers "Next Sprint"
-            :source "/customers/TC+Sharks/TC1212"}]
+     [:div {:chart "customersNext"}]
      [:div "Epics"]]))
 

@@ -99,8 +99,5 @@
            (println "whoops " e)
            (status 401 "Bah"))))
 
-(defpage "/velocity/:team" {:keys [team]}
-         (json (velocity team)))
-
 (defpage "/velocity/:team/:sprint" {:keys [team sprint tqx]}
-         (datasource tqx (velocity team) "string" "number"))
+         (datasource tqx (velocity team sprint) "string" "number"))
