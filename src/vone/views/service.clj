@@ -13,11 +13,17 @@
     [:headers "Content-Disposition"]
     (str "attachment;filename=" filename ".csv")))
 
+(defn parse-int
+  [s]
+  (if s
+    (Integer/parseInt s)
+    0))
+
 (defn reqId
   [tqx]
   (if tqx
     (let [match (re-find #"reqId:(\d+)" tqx)]
-      (parseInt (second match)))
+      (parse-int (second match)))
     0))
 
 (defn tabulate
@@ -38,7 +44,7 @@
                 (update-in t [:cols]
                            (fn [cols]
                              (map #(assoc %1 :type %2) cols columnTypes))))]
-    (json {:reqId  (reqId tqx)
+    (json {:reqId (reqId tqx)
            :table table})))
     
 ;TODO: make submit go the right place first instead of redirecting
@@ -93,6 +99,8 @@
            (println "whoops " e)
            (status 401 "Bah"))))
 
-(defpage "/velocity/:team/:sprint" {:keys [team sprint]}
-         (json (velocity team sprint)))
+(defpage "/velocity/:team" {:keys [team]}
+         (json (velocity team)))
 
+(defpage "/velocity/:team/:sprint" {:keys [team sprint tqx]}
+         (datasource tqx (velocity team) "string" "number"))

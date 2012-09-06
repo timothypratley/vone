@@ -52,7 +52,7 @@ angular.module('charts', [])
 		},
 		burndown: {
 			chart: "AreaChart",
-			title: "Title",
+			title: "Burndown",
 			api: "/burndown",
 			vAxis: {title: "ToDo Hours"},
 		    hAxis: {title: "Day"},
@@ -60,7 +60,7 @@ angular.module('charts', [])
 		},
 		cumulative: {
 			chart: "AreaChart",
-			title: "Title",
+			title: "Cumulative",
 			api: "/cumulative",
 		    vAxis: {title: "Story Points"},
 		    hAxis: {title: "Day"},
@@ -69,15 +69,20 @@ angular.module('charts', [])
 		},
 		velocity: {
 		    chart: "ColumnChart",
-		    title: "Title",
+		    title: "Velocity",
 		    api: "/velocity",
 		    vAxis: {title: "Story Points"},
 		    hAxis: {title: "Sprint"}
 		},
 		estimates: {
-			chart: "Table",
-			title: "Title",
+			chart: "DataTable",
+			title: "Estimates",
 			api: "/estimates"
+		},
+		customers: {
+			chart: "PieChart",
+			title: "Customers",
+			api: "/customers"
 		}
 	})
 	.directive('chart', function() {
@@ -102,11 +107,11 @@ angular.module('charts', [])
 	})
 	.directive('estimates', function(options) {
 		return function(scope, elem, attrs) {
-	    	createChart(scope, elem, options.estimate);
+	    	createChart(scope, elem, attrs, options.estimate);
 		};
 	})
-	.directive('pie', function() {
+	.directive('customers', function(options) {
 	    return function(scope, elem, attrs) {
-	    	createChart(scope, elem, attrs);
+	    	createChart(scope, elem, attrs, options.customers);
 	    };
 	});

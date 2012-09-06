@@ -138,12 +138,10 @@
             :source ""}]
      [:div {:style "width:800; height:400"} "Stories"]
      [:div "Splits"]
-     [:div {:chart "PieChart"
-            :source "/customers/{{sprint.Team}}/{{sprint.Name}}"
-            :title "Customer Focus - Points per Customer"}]
+     [:div {:customers "Customer Focus - Points per Customer"
+            :source "/customers/{{sprint.Team}}/{{sprint.Name}}"}]
      [:div "Summary"]
-     [:div {:chart "PieChart"
-            :source "/customers/TC+Sharks/TC1212"
-            :title "Next Sprint"}]
+     [:div {:customers "Next Sprint"
+            :source "/customers/TC+Sharks/TC1212"}]
      [:div "Epics"]]))
 

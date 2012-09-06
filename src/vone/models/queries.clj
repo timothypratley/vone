@@ -38,6 +38,12 @@
   [date]
   (format/unparse (format/formatter "yyyy-MM-dd'T23:59:59'") date))
 
+(defn parse-double
+  [s]
+  (if s
+    (Double/parseDouble s)
+    0))
+
 (defn indexer [x] (get-in x [:attrs :name]))
 (defn collapse
   "Converts xml into a more condensed structure"
@@ -52,9 +58,10 @@
                (let [c (collapse content)]
                  (if-let [n (indexer x)]
                    [(keyword n)
-                    (if (.endsWith n "Date")
-                      (parse-date c)
-                      c)]
+                    (cond
+                      (.endsWith n "Date") (parse-date c)
+                      (some #(.contains n %) ["Estimate" "Todo" "@Sum"]) (parse-double c)
+                      :else c)]
                    c)))
     :else x))
 
@@ -63,38 +70,32 @@
   [query]
   (let [params {:basic-auth [(session/get :username)
                              (session/get :password)]}]
-    (client/get (str base-url query) params)))
+    (try
+      (client/get (str base-url query) params)
+      (catch Exception e
+        (println (str base-url query))
+        (throw e)))))
 
 (defn xml2map
   "Converts XML into a map"
   [xml]
-  (-> (java.io.ByteArrayInputStream. (.getBytes xml))
-    xml/parse
-    collapse))
-
-(defn xhr2map
-  "XmlHttpRequest from VersionOne into a map"
-  [query]
   (try
-    (let [response (xhr query)]
-      ;TODO: is there a constant for 200?
-      (if (= 200 (:status response))
-        (xml2map (response :body)))) 
+    (-> (java.io.ByteArrayInputStream. (.getBytes xml))
+      xml/parse
+      collapse)
     (catch Exception e
-      (println "Foo: " e)
+      (println xml)
       (throw e))))
 
 (defn xhre
   [query extract]
-  (let [response (xhr query)
-        m (xml2map (response :body))]
-    (try
-      (extract m)
-      (catch Exception e
-        (println response)
-        (println m)
-        (throw)))))
-
+    (let [response (xhr query)
+          m (xml2map (response :body))]
+      (try
+        (extract m)
+        (catch Exception e
+          (println m)
+          (throw e)))))
 
 (defn names
   "Retrieves a sorted seqence of asset names"
@@ -123,20 +124,10 @@
                          (filter (complement weekend?)
                                  (inc-date-stream begin)))
         results (pmap (partial f team sprint) days)
-        indexed (map cons (iterate inc 1) results)]
-    indexed))
+        pairs (map cons (iterate inc 1) results)]
+    pairs))
 
-(defn parseDouble
-  [s]
-  (if s
-    (Double/parseDouble s)
-    0))
-
-(defn parseInt
-  [s]
-  (if s
-    (Integer/parseInt s)
-    0))
+(def extract-one (comp first vals first))
 
 (defn todo-on
   [team sprint date]
@@ -144,7 +135,7 @@
                    "&where=Name='" sprint
                    "'&sel=Workitems[Team.Name='" team
                    "'].ToDo[AssetState!='Dead'].@Sum")]
-    (xhre query (comp vector parseDouble first vals first))))
+    (xhre query (comp vector extract-one))))
 
 (defn burndown
   [team sprint]
@@ -159,23 +150,15 @@
        "';Status.Name='" status
        "'].Estimate[AssetState!='Dead'].@Sum"))
 
-(defn extract-double
-  [m]
-  (-> m
-    first
-    vals
-    first
-    parseDouble))
-
 (defn cumulative-on-status
   [team sprint date status]
   (xhre (cumulative-on-status-query team sprint date status)
-        extract-double))
+        extract-one))
 
 (defn cumulative-on
   [names team sprint date]
   (pmap (partial cumulative-on-status team sprint date)
-             (map codec/url-encode names)))
+        (map codec/url-encode names)))
 
 (defn cumulative
   [team sprint]
@@ -184,7 +167,7 @@
 	        (for-sprint team sprint (partial cumulative-on statuses)))))
 
 (defn sum [m story]
-  (update-in m [(:Parent.Name story)] (fnil + 0) (parseDouble (:Estimate story)))) 
+  (update-in m [(:Parent.Name story)] (fnil + 0) (:Estimate story))) 
 (defn customers
   [team sprint]
   (cons ["Customer" "Story Points"]
@@ -195,22 +178,32 @@
 	    (xhre query (partial reduce sum {})))))
 
 (defn team-sprints-extract
-  [m]
-  (->> m
-    (map #(clojure.set/rename-keys
-            % {:Workitems:PrimaryWorkitem.Timebox.Name :Sprint}))
-    (map #(update-in % [:Sprint] (partial apply sorted-set)))
-    (map #(vector (:Name %) (:Sprint %)))
-    (into {})))
+  "Creates a map from team name to sprints they have participated in"
+  [teams]
+  (into {}
+        (for [team teams]
+          [(:Name team)
+           (apply sorted-set (:Workitems:PrimaryWorkitem.Timebox.Name team))])))
 
 (defn team-sprints
+  "Retrieves all teams and the sprints they have particpated in"
   []
   (xhre "/Data/Team?sel=Name,Workitems:PrimaryWorkitem.Timebox.Name&sort=Name"
         team-sprints-extract))
 
-(defn velocity
-  [team sprint]
-  ;TODO
-  (let [query (str "/Data/Timebox?sel=Estimate.@Sum&where=Name=" sprint)]
-    (xhre query extract-double)))
+;TODO: the field names are screwy, just access them by index?
+(defn velocity-extract
+  [velocity-field sprints]
+  (for [sprint sprints]
+    [(:Name sprint)
+     ((keyword (codec/url-decode velocity-field)) sprint)]))
 
+(defn velocity
+  [team]
+  (cons ["Sprint" "Story Points"]
+        (let [sum-story-points (str "Workitems:PrimaryWorkitem[Team.Name='" (codec/url-encode team)
+                                    "'].Estimate[AssetState!='Dead'].@Sum")
+              query (str "/Data/Timebox?sel=Name," sum-story-points
+                         "&where=" sum-story-points
+                         ">'0'&sort=EndDate")]
+          (xhre query (partial velocity-extract sum-story-points)))))
