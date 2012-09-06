@@ -112,71 +112,6 @@
   (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint "'")]
     (xhre query first)))
 
-(defn for-sprint
-  "Queries f for each sprint day"
-  [team sprint f]
-  (let [team (codec/url-encode team)
-        sprint (codec/url-encode sprint) 
-        span (sprint-span sprint)
-        begin (span :BeginDate)
-        end (span :EndDate)
-        days (take-while #(time/before? % end)
-                         (filter (complement weekend?)
-                                 (inc-date-stream begin)))
-        results (pmap (partial f team sprint) days)
-        pairs (map cons (iterate inc 1) results)]
-    pairs))
-
-(def extract-one (comp first vals first))
-
-(defn todo-on
-  [team sprint date]
-  (let [query (str "/Hist/Timebox?asof=" (tostr-date date)
-                   "&where=Name='" sprint
-                   "'&sel=Workitems[Team.Name='" team
-                   "'].ToDo[AssetState!='Dead'].@Sum")]
-    (xhre query (comp vector extract-one))))
-
-(defn burndown
-  [team sprint]
-  (cons ["Day" "ToDo"]
-        (for-sprint team sprint todo-on)))
-
-(defn cumulative-on-status-query
-  [team sprint date status]
-  (str "/Hist/Timebox?asof=" (tostr-date date)
-       "&where=Name='" sprint
-       "'&sel=Workitems:PrimaryWorkitem[Team.Name='" team
-       "';Status.Name='" status
-       "'].Estimate[AssetState!='Dead'].@Sum"))
-
-(defn cumulative-on-status
-  [team sprint date status]
-  (xhre (cumulative-on-status-query team sprint date status)
-        extract-one))
-
-(defn cumulative-on
-  [names team sprint date]
-  (pmap (partial cumulative-on-status team sprint date)
-        (map codec/url-encode names)))
-
-(defn cumulative
-  [team sprint]
-  (let [statuses (reverse (names "StoryStatus"))]
-	  (cons (cons "Day" statuses)
-	        (for-sprint team sprint (partial cumulative-on statuses)))))
-
-(defn sum [m story]
-  (update-in m [(:Parent.Name story)] (fnil + 0) (:Estimate story))) 
-(defn customers
-  [team sprint]
-  (cons ["Customer" "Story Points"]
-	  ; TODO: where should url-encode happen?
-	  (let [query (str "/Data/PrimaryWorkitem?where=Timebox.Name='" (codec/url-encode sprint)
-	                   "';Team.Name='" (codec/url-encode team)
-	                   "';AssetState!='Dead'&sel=Estimate,Parent.Name")]
-	    (xhre query (partial reduce sum {})))))
-
 (defn team-sprints-extract
   "Creates a map from team name to sprints they have participated in"
   [teams]
@@ -185,6 +120,7 @@
           [(:Name team)
            (apply sorted-set (:Workitems:PrimaryWorkitem.Timebox.Name team))])))
 
+;TODO: could very well calculate the velocity here also!
 (defn team-sprints
   "Retrieves all teams and the sprints they have particpated in"
   []
@@ -207,6 +143,87 @@
                          "&where=" sum-story-points
                          ">'0'&sort=EndDate")
               results (xhre query (partial velocity-extract sum-story-points))
-              before #(<= 0 (compare sprint (first %)))]
-          (take-last 5
-                (take-while before results)))))
+              up-to #(<= 0 (compare sprint (first %)))]
+          (take-last 5 (take-while up-to results)))))
+
+(defn for-sprint
+  "Queries f for each sprint day"
+  [team sprint f]
+  (let [team (codec/url-encode team)
+        sprint (codec/url-encode sprint) 
+        span (sprint-span sprint)
+        begin (span :BeginDate)
+        end (span :EndDate)
+        days (take-while #(time/before? % end)
+                         (filter (complement weekend?)
+                                 (inc-date-stream begin)))]
+    (pmap (partial f team sprint) days)))
+
+(def extract-one (comp first vals first))
+
+(defn todo-on
+  [team sprint date]
+  (let [query (str "/Hist/Timebox?asof=" (tostr-date date)
+                   "&where=Name='" sprint
+                   "'&sel=Workitems[Team.Name='" team
+                   "'].ToDo[AssetState!='Dead'].@Sum")]
+    (xhre query (comp vector extract-one))))
+
+(defn burndown
+  [team sprint]
+  (cons ["Day" "ToDo"]
+        (map cons (iterate inc 1)
+             (for-sprint team sprint todo-on))))
+
+(defn burndownComparison
+  [team sprint]
+  (let [sprints (map first (velocity team sprint))
+        sprints (take-last 4 sprints)]
+    (println "FOOOO " sprints)
+    (cons (cons "Day" sprints)
+          (map cons (iterate inc 1)
+               (apply concat (map #(for-sprint team % todo-on) sprints))))))
+
+(defn cumulative-on-status-query
+  [team sprint date status]
+  (str "/Hist/Timebox?asof=" (tostr-date date)
+       "&where=Name='" sprint
+       "'&sel=Workitems:PrimaryWorkitem[Team.Name='" team
+       "';Status.Name='" status
+       "'].Estimate[AssetState!='Dead'].@Sum"))
+
+(defn cumulative-on-status
+  [team sprint date status]
+  (xhre (cumulative-on-status-query team sprint date status)
+        extract-one))
+
+(defn cumulative-on
+  [names team sprint date]
+  (pmap (partial cumulative-on-status team sprint date)
+        (map codec/url-encode names)))
+
+(defn cumulative
+  [team sprint]
+  (let [statuses (reverse (names "StoryStatus"))]
+    (cons (cons "Day" statuses)
+          (map cons (iterate inc 1)
+               (for-sprint team sprint (partial cumulative-on statuses))))))
+
+(defn cumulativePrevious
+  [team sprint]
+  {})
+
+(defn sum [m story]
+  (update-in m [(:Parent.Name story)] (fnil + 0) (:Estimate story))) 
+(defn customers
+  [team sprint]
+  (cons ["Customer" "Story Points"]
+	  ; TODO: where should url-encode happen?
+	  (let [query (str "/Data/PrimaryWorkitem?where=Timebox.Name='" (codec/url-encode sprint)
+	                   "';Team.Name='" (codec/url-encode team)
+	                   "';AssetState!='Dead'&sel=Estimate,Parent.Name")]
+	    (xhre query (partial reduce sum {})))))
+
+(defn customersNext
+  [team sprint]
+  {})

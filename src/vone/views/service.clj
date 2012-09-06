@@ -46,58 +46,35 @@
                              (map #(assoc %1 :type %2) cols columnTypes))))]
     (json {:reqId (reqId tqx)
            :table table})))
+
+(defmacro ts [x]
+  `(do
+     (defpage ~(str "/csv/" x "/:team/:sprint")
+              {:keys [~(symbol "team") ~(symbol "sprint")]}
+              (csv (~(symbol x) ~(symbol "team")
+                       ~(symbol "sprint")
+                       (str ~x \_ ~(symbol "team") \_ ~(symbol "sprint")))))
+     (defpage ~(str "/ds/" x "/:team/:sprint")
+              {:keys [~(symbol "team") ~(symbol "sprint") ~(symbol "tqx")]}
+              (datasource ~(symbol "tqx")
+                          (~(symbol x) ~(symbol "team") ~(symbol "sprint"))))))
     
-;TODO: make submit go the right place first instead of redirecting
-(defpage [:post "/burndown"] {:keys [team sprint]}
-  (redirect (str "/burndown/" team "/" sprint)))
-(defpage "/csv/burndown/:team/:sprint" {:keys [team sprint]}
-  (csv (burndown team sprint) (str "burndown_" team "_" sprint)))
-(defpage "/burndown/:team/:sprint" {:keys [team sprint tqx]}
-  (try+
-    (datasource tqx (burndown team sprint))
-    (catch [:status 401] []
-      (status 401 "Login"))))
-
-;TODO: make submit go the right place first instead of redirecting
-(defpage [:post "/cumulative"] {:keys [team sprint]}
-  (redirect (str "/cumulative/" team "/" sprint)))
-(defpage "/csv/cumulative/:team/:sprint" {:keys [team sprint]}
-  (csv (cumulative team sprint) (str "cumulative_" team "_" sprint)))
-(defpage "/cumulative/:team/:sprint" {:keys [team sprint tqx]}
-  (try+
-    (let [content (cumulative team sprint)]
-      (datasource tqx content))
-    ; TODO: this doesn't work - make a wrapper for all services
-    ; which need authentication
-    (catch [:status 401] []
-      (status 401 "Login"))))
-
-(defpage "/teams" []
-  (try+
-    (json (sort-by clojure.string/upper-case (names "Team")))
-    (catch [:status 401] []
-      (status 401 "Please Login"))))
-
-(defpage [:post "/customers"] {:keys [team sprint]}
-  (redirect (str "/customers/" team sprint)))
-(defpage "/csv/customers/:team/:sprint" {:keys [team sprint]}
-  (csv (customers team sprint) (str "customers_" team "_" sprint)))
-(defpage "/customers/:team/:sprint" {:keys [team sprint tqx]}
-  (try+
-    (datasource tqx (customers team sprint) "string" "number")
-    (catch [:status 401] []
-      (status 401 "Login"))))
+(ts "burndown")
+(ts "burndownComparison")
+(ts "cumulative")
+(ts "cumulativePrevious")
+; TODO: "string" "number"
+(ts "velocity")
+(ts "customers")
+(ts "customersNext")
 
 (defpage "/team-sprints" []
-         ;TODO: find a better way to propogate 401
- (try
-  (try+
+  ;TODO: find a better way to propogate 401
+  (try
     (json (team-sprints))
-    (catch [:status 401] []
-      (status 401 "Please login")))
-         (catch Exception e
-           (println "whoops " e)
-           (status 401 "Bah"))))
+    ;(catch [:status 401] []
+      ;(status 401 "Please login"))
+    (catch Exception e
+      (println "whoops " e)
+      (status 401 "Bah"))))
 
-(defpage "/velocity/:team/:sprint" {:keys [team sprint tqx]}
-         (datasource tqx (velocity team sprint) "string" "number"))

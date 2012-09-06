@@ -72,7 +72,7 @@ angular.module('charts', [])
 	    			return;
 	    		}
 	    			
-	    		var url = attrs.chart + '/' + scope.team + '/' + scope.sprint;
+	    		var url = '/ds/' + attrs.chart + '/' + scope.team + '/' + scope.sprint;
 	    		$log.info("Quering " + url);
 	        	// TODO: how come 404 isn't handled by response...
 	            new google.visualization.Query(url)
