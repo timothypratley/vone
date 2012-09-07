@@ -33,7 +33,7 @@
  <Asset href='/Tideworks/VersionOne/rest-1.v1/Data/Timebox/475626/1416294' id='Timebox:475626:1416294'>
  <Attribute name=\"Workitems:PrimaryWorkitem[Team.Name='TC Sharks';Status.Name='Accepted'].Estimate[AssetState!='Dead'].@Sum\">57</Attribute></Asset></History>"
               m (xml2map x)]
-           (pprint (cumulative-on-status-extract m))))
+           (pprint (extract-one m))))
 
 (deftest test-empty-xml
     (let [x 

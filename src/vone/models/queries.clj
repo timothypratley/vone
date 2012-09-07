@@ -32,7 +32,11 @@
 
 (defn parse-date
   [date]
-  (format/parse (format/formatter "yyyy-MM-dd") date))
+  (try
+    (format/parse (format/formatter "yyyy-MM-dd") date)
+    (catch Exception e
+      nil)))
+  
 
 (defn tostr-date
   [date]
@@ -40,29 +44,40 @@
 
 (defn parse-double
   [s]
-  (if s
+  (try
     (Double/parseDouble s)
-    0))
+    (catch Exception e
+      nil)))
 
-(defn indexer [x] (get-in x [:attrs :name]))
-(defn collapse
+(let [indexer (comp :name :attrs)]
+  (defn collapse
+	  "Converts xml into a more condensed structure"
+	  [x]
+	  (cond
+	    (and (vector? x) (string? (first x))) (first x)
+	    (vector? x) (let [s (map collapse x)]
+	                  (if (vector? (first s))   ;key-value pairs
+	                    (into {} s)
+	                    s))
+	    (map? x) (let [c (collapse (:content x))]
+	               (if-let [n (indexer x)]
+	                 [n (if c
+                        (or (parse-double c) (parse-date c) c)
+                        0)]
+	                 c))
+	    :else x)))
+
+;TODO: maybe I can parse the query string to figure out the return fields
+(comment "This would be awesome, but V1 does not preserve order in select"
+  defn collapse
   "Converts xml into a more condensed structure"
   [x]
   (cond
     (and (vector? x) (string? (first x))) (first x)
-    (vector? x) (let [s (map collapse x)]
-                  (if (vector? (first s))   ;key-value pairs
-                    (into {} s)
-                    s))
-    (map? x) (let [content (:content x)]
-               (let [c (collapse content)]
-                 (if-let [n (indexer x)]
-                   [(keyword n)
-                    (cond
-                      (.endsWith n "Date") (parse-date c)
-                      (some #(.contains n %) ["Estimate" "Todo" "@Sum"]) (parse-double c)
-                      :else c)]
-                   c)))
+    (vector? x) (map collapse x)
+    (map? x) (if-let [c (collapse (:content x))]
+               (or (parse-double c) (parse-date c) c)
+               0)
     :else x))
 
 (defn xhr
@@ -134,17 +149,39 @@
     [(:Name sprint)
      ((keyword (codec/url-decode velocity-field)) sprint)]))
 
+;TODO: this is getting called multiple times, it doesn't need to be
+(defn velocity-all
+  [team]
+  (let [sum-story-points (str "Workitems:PrimaryWorkitem[Team.Name='" (codec/url-encode team)
+                              "'].Estimate[AssetState!='Dead'].@Sum")
+        query (str "/Data/Timebox?sel=Name," sum-story-points
+                   "&where=" sum-story-points
+                   ">'0'&sort=EndDate")]
+    (xhre query (partial velocity-extract sum-story-points))))
+
+(def not-pos? (complement pos?))
+(def not-neg? (complement neg?))
+(defn take-before
+  [sprint sprints]
+  (take-while #(neg? (compare % sprint)) sprints))
+(defn take-to
+  [sprint sprints]
+  (take-while #(not-pos? (compare % sprint)) sprints))
+(defn take-after
+  [sprint sprints]
+  (drop-while #(not-pos? (compare % sprint)) sprints))
+
 (defn velocity
   [team sprint]
-  (cons ["Sprint" "Story Points"]
-        (let [sum-story-points (str "Workitems:PrimaryWorkitem[Team.Name='" (codec/url-encode team)
-                                    "'].Estimate[AssetState!='Dead'].@Sum")
-              query (str "/Data/Timebox?sel=Name," sum-story-points
-                         "&where=" sum-story-points
-                         ">'0'&sort=EndDate")
-              results (xhre query (partial velocity-extract sum-story-points))
-              up-to #(<= 0 (compare sprint (first %)))]
-          (take-last 5 (take-while up-to results)))))
+  (let [sprints (velocity-all team)]
+    (cons ["Sprint" "Story Points"]
+          (take-last 5
+                     (take-while #(not-pos? (compare (first %) sprint))
+                                 sprints)))))
+
+(defn sprints
+  [team]
+  (map first (velocity-all team)))
 
 (defn for-sprint
   "Queries f for each sprint day"
@@ -159,7 +196,7 @@
                                  (inc-date-stream begin)))]
     (pmap (partial f team sprint) days)))
 
-(def extract-one (comp first vals first))
+(def single-extract (comp first vals first))
 
 (defn todo-on
   [team sprint date]
@@ -167,22 +204,21 @@
                    "&where=Name='" sprint
                    "'&sel=Workitems[Team.Name='" team
                    "'].ToDo[AssetState!='Dead'].@Sum")]
-    (xhre query (comp vector extract-one))))
+    (xhre query single-extract)))
 
 (defn burndown
   [team sprint]
   (cons ["Day" "ToDo"]
-        (map cons (iterate inc 1)
+        (map list (iterate inc 1)
              (for-sprint team sprint todo-on))))
 
 (defn burndownComparison
   [team sprint]
-  (let [sprints (map first (velocity team sprint))
-        sprints (take-last 4 sprints)]
-    (println "FOOOO " sprints)
+  (let [sprints (take-last 4
+                           (take-to sprint (sprints team)))]
     (cons (cons "Day" sprints)
           (map cons (iterate inc 1)
-               (apply concat (map #(for-sprint team % todo-on) sprints))))))
+               (apply map list (map #(for-sprint team % todo-on) sprints))))))
 
 (defn cumulative-on-status-query
   [team sprint date status]
@@ -195,7 +231,7 @@
 (defn cumulative-on-status
   [team sprint date status]
   (xhre (cumulative-on-status-query team sprint date status)
-        extract-one))
+        single-extract))
 
 (defn cumulative-on
   [names team sprint date]
@@ -211,7 +247,8 @@
 
 (defn cumulativePrevious
   [team sprint]
-  {})
+  (if-let [previous (last (take-before sprint (sprints team)))]
+    (cumulative team previous)))
 
 (defn sum [m story]
   (update-in m [(:Parent.Name story)] (fnil + 0) (:Estimate story))) 
@@ -226,4 +263,39 @@
 
 (defn customersNext
   [team sprint]
-  {})
+  (if-let [next (first (take-after sprint (sprints team)))]
+    (customers team next)))
+
+(defn estimate-extract
+  [m]
+  (println "BOO " m)
+  m)
+
+; TODO: limit query to a sprint
+(defn estimates-all
+  [team]
+  (let [t (str "[Team.Name='" (codec/url-encode team) "';AssetState!='Dead']")
+        sum-point-estimates (str "Workitems:PrimaryWorkitem" t ".Estimate.@Sum")
+        count-stories (str "Workitems:Story" t ".@Count")
+        count-defects (str "Workitems:Defect" t ".@Count")
+        count-test-sets (str "Workitems:TestSet" t ".@Count")
+        count-test-cases (str "Workitems:Test" t ".@Count")
+        sum-hour-estimates (str "Workitems" t ".DetailEstimate.@Sum")
+        t (str "[Team.Name='" (codec/url-encode team) "']")
+        sum-hour-actuals (str "Actuals" t ".Value.@Sum")
+        capacity (str "Capacities" t ".Value.@Sum")
+        query (str "/Data/Timebox?sel=Name," sum-point-estimates
+                   "," count-stories
+                   "," count-defects
+                   "," count-test-sets
+                   "," count-test-cases
+                   "," sum-hour-estimates
+                   "," sum-hour-actuals
+                   "," capacity
+                   "&where=" sum-point-estimates
+                   ">'0'&sort=EndDate")]
+    (xhre query estimate-extract)))
+
+(defn estimates
+  [team sprint]
+  (estimates-all team))

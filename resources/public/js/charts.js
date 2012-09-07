@@ -7,21 +7,21 @@ angular.module('charts', [])
 		burndown: {
 			visualization: "AreaChart",
 			title: "Burndown - Total ToDo Remaining",
-			vAxis: {title: "ToDo Hours"},
+			vAxis: {title: "ToDo Hours", minValue: 0},
 		    hAxis: {title: "Day"},
 			areaOpacity: 0.0
 		},
 		burndownComparison: {
 			visualization: "AreaChart",
 			title: "Burndown Comparison",
-			vAxis: {title: "ToDo Hours"},
+			vAxis: {title: "ToDo Hours", minValue: 0},
 		    hAxis: {title: "Day"},
 			areaOpacity: 0.0
 		},
 		cumulative: {
 			visualization: "AreaChart",
 			title: "Cumulative Flow - Story Status Over Time",
-		    vAxis: {title: "Story Points"},
+		    vAxis: {title: "Story Points", minValue: 0},
 		    hAxis: {title: "Day"},
 		    isStacked: true,
 		    areaOpacity: 0.8
@@ -29,7 +29,7 @@ angular.module('charts', [])
 		cumulativePrevious: {
 			visualization: "AreaChart",
 			title: "Previous Cumulative Flow",
-		    vAxis: {title: "Story Points"},
+		    vAxis: {title: "Story Points", minValue: 0},
 		    hAxis: {title: "Day"},
 		    isStacked: true,
 		    areaOpacity: 0.8
@@ -37,7 +37,7 @@ angular.module('charts', [])
 		velocity: {
 			visualization: "ColumnChart",
 		    title: "Velocity - Story Points per Sprint",
-		    vAxis: {title: "Story Points"},
+		    vAxis: {title: "Story Points", minValue: 0},
 		    hAxis: {title: "Sprint"}
 		},
 		estimates: {

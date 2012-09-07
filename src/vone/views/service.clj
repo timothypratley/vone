@@ -19,6 +19,12 @@
     (Integer/parseInt s)
     0))
 
+(defn column-type
+  [s]
+  (if (number? s)
+    "number"
+    "string"))
+
 (defn reqId
   [tqx]
   (if tqx
@@ -28,43 +34,39 @@
 
 (defn tabulate
   [content]
-  {:cols (map #(hash-map :label %1)
-              (first content))
+  {:cols (map #(hash-map :label %1 :type %2)
+              (first content)
+              (map column-type (second content)))
    :rows (map #(hash-map
                  :c (map (partial hash-map :v) %))
               (rest content))})
-         
-(defn datasource
-  [tqx content & columnTypes]
-  (let [t (tabulate content)
-        ;TODO: wow this is a really ugly way to specify the column type,
-        ;google chart wants it for pie charts
-        table (if (empty? columnTypes)
-                t
-                (update-in t [:cols]
-                           (fn [cols]
-                             (map #(assoc %1 :type %2) cols columnTypes))))]
-    (json {:reqId (reqId tqx)
-           :table table})))
 
-(defmacro ts [x]
+(defn datasource
+  [tqx content]
+  (json {:reqId (reqId tqx)
+         :table (tabulate content)}))
+
+(defmacro ts [query & columnTypes]
   `(do
-     (defpage ~(str "/csv/" x "/:team/:sprint")
+     (defpage ~(str "/json/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint")]}
-              (csv (~(symbol x) ~(symbol "team")
+              (json (~(symbol query) ~(symbol "team") ~(symbol "sprint"))))
+     (defpage ~(str "/csv/" query "/:team/:sprint")
+              {:keys [~(symbol "team") ~(symbol "sprint")]}
+              (csv (~(symbol query) ~(symbol "team")
                        ~(symbol "sprint")
-                       (str ~x \_ ~(symbol "team") \_ ~(symbol "sprint")))))
-     (defpage ~(str "/ds/" x "/:team/:sprint")
+                       (str ~query \_ ~(symbol "team") \_ ~(symbol "sprint")))))
+     (defpage ~(str "/ds/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint") ~(symbol "tqx")]}
               (datasource ~(symbol "tqx")
-                          (~(symbol x) ~(symbol "team") ~(symbol "sprint"))))))
+                          (~(symbol query) ~(symbol "team") ~(symbol "sprint"))))))
     
 (ts "burndown")
 (ts "burndownComparison")
 (ts "cumulative")
 (ts "cumulativePrevious")
-; TODO: "string" "number"
 (ts "velocity")
+(ts "estimates")
 (ts "customers")
 (ts "customersNext")
 
