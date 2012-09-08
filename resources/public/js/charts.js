@@ -41,7 +41,7 @@ angular.module('charts', [])
 		    hAxis: {title: "Sprint"}
 		},
 		estimates: {
-			visualization: "DataTable",
+			visualization: "Table",
 			title: "Estimates",
 		},
 		customers: {

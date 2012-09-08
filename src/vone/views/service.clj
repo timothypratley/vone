@@ -42,41 +42,48 @@
               (rest content))})
 
 (defn datasource
+  "Google charts datasource"
   [tqx content]
   (json {:reqId (reqId tqx)
          :table (tabulate content)}))
 
-(defmacro ts [query & columnTypes]
+(defmacro tss
+  "Team Sprint Service
+   connects a query function to output as json, csv and datasource"
+  [query]
   `(do
      (defpage ~(str "/json/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint")]}
-              (json (~(symbol query) ~(symbol "team") ~(symbol "sprint"))))
+              (try+
+                (json (~(symbol query) ~(symbol "team") ~(symbol "sprint")))
+                (catch [:status 401] []
+                  (status 401 "Please login"))))
      (defpage ~(str "/csv/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint")]}
-              (csv (~(symbol query) ~(symbol "team")
-                       ~(symbol "sprint")
-                       (str ~query \_ ~(symbol "team") \_ ~(symbol "sprint")))))
+              (try+
+                (csv (~(symbol query) ~(symbol "team") ~(symbol "sprint")
+                  (str ~query \_ ~(symbol "team") \_ ~(symbol "sprint"))))
+                (catch [:status 401] []
+                  (status 401 "Please login"))))
      (defpage ~(str "/ds/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint") ~(symbol "tqx")]}
-              (datasource ~(symbol "tqx")
-                          (~(symbol query) ~(symbol "team") ~(symbol "sprint"))))))
+              (try+
+                (datasource ~(symbol "tqx")
+                  (~(symbol query) ~(symbol "team") ~(symbol "sprint")))
+                (catch [:status 401] []
+                  (status 401 "Please login"))))))
     
-(ts "burndown")
-(ts "burndownComparison")
-(ts "cumulative")
-(ts "cumulativePrevious")
-(ts "velocity")
-(ts "estimates")
-(ts "customers")
-(ts "customersNext")
+(tss "burndown")
+(tss "burndownComparison")
+(tss "cumulative")
+(tss "cumulativePrevious")
+(tss "velocity")
+(tss "estimates")
+(tss "customers")
+(tss "customersNext")
 
 (defpage "/team-sprints" []
-  ;TODO: find a better way to propogate 401
-  (try
+  (try+
     (json (team-sprints))
-    ;(catch [:status 401] []
-      ;(status 401 "Please login"))
-    (catch Exception e
-      (println "whoops " e)
-      (status 401 "Bah"))))
-
+    (catch [:status 401] []
+      (status 401 "Please login"))))
