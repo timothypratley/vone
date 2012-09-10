@@ -37,10 +37,10 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
     .run(function ($http, $rootScope, $log) {
         $http.get("/ping")
             .success(function (data) {
-                $rootScope.username = data;
+                $rootScope.username = angular.fromJson(data);
             })
             .error($log.error);
-        // not sure this belongs here,
+        // TODO: not sure this belongs here,
         // but I want to avoid calling it everytime retro is visited
         $http.get("/team-sprints")
             .success(function (data, status) {
