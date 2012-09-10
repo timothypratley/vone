@@ -84,11 +84,13 @@
   (session/put! :password password)
   (response/json username))
 
-(defpage [:post "/logout"] []
-         (println "logout")
+(defpage "/logout" []
+         (println "logout" (session/get :username))
          (session/clear!)
-         (response/json "Ok"))
+         (html "Logged out"))
 
+(defpage "/ping" []
+         (response/json (session/get :username)))
 
 (defpage "/about" []
          (html

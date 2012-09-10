@@ -26,13 +26,13 @@
   (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint "'")]
     (request-transform query first)))
 
-(defn map-of-sets
-  "Creates a map of sets from a collection of key/sets"
-  [map-key set-key c]
-  (into {}
-        (for [m c]
-          [(m map-key)
-           (apply sorted-set (m set-key))])))
+(defn setify
+  "Creates sets from a collection entities (to remove duplicates)"
+  [key-selector value-selector c]
+  (into {} (for [entity c]
+             [(get entity key-selector)
+              (apply sorted-set-by #(compare %2 %1) ;descending
+                     (get entity value-selector))])))
 
 ;TODO: could very well calculate the velocity here also!
 (defn team-sprints
@@ -42,13 +42,13 @@
         name "Name"
         fields [name sprint]
         query (str "/Data/Team?sel=" (ff fields) "&sort=Name")]
-    (request-transform query (partial map-of-sets name sprint))))
+    (request-transform query (partial setify name sprint))))
 
 ;TODO: this is getting called multiple times, it doesn't need to be
 (defn velocity-all
   [team]
   (let [sum-story-points (str "Workitems:PrimaryWorkitem[Team.Name='" (codec/url-encode team)
-                              "'].Estimate[AssetState!='Dead'].@Sum")
+                              "';AssetState!='Dead'].Estimate.@Sum")
         fields ["Name" sum-story-points]
         query (str "/Data/Timebox?sel=" (ff fields)
                    "&where=" sum-story-points ">'0'&sort=EndDate")]
@@ -107,7 +107,7 @@
   (let [query (str "/Hist/Timebox?asof=" (tostr-date date)
                    "&where=Name='" sprint
                    "'&sel=Workitems[Team.Name='" team
-                   "'].ToDo[AssetState!='Dead'].@Sum")]
+                   "';AssetState!='Dead'].ToDo.@Sum")]
     (request-transform query singular)))
 
 ;public
@@ -133,7 +133,7 @@
   [statuses team sprint date]
   (let [status-field #(str "Workitems:PrimaryWorkitem[Team.Name='" team
                            "';Status.Name='" (codec/url-encode %)
-                           "'].Estimate[AssetState!='Dead'].@Sum")
+                           "';AssetState!='Dead'].Estimate.@Sum")
         fields (map status-field statuses)
         query (str "/Hist/Timebox?asof=" (tostr-date date)
                    "&where=Name='" sprint
@@ -223,5 +223,19 @@
 (defn estimates
   "Gets a table of estimates and statistics"
   [team sprint]
-  (transpose (cons ["Sprint" "Points" "Stories" "Defects" "Test Sets" "Tests" "Estimated" "Done" "Capacity"]
-                   (estimates-all team))))
+  (transpose
+    (cons ["Sprint"
+           "Points"
+           "Stories"
+           "Defects"
+           "Test Sets"
+           "Tests"
+           "Estimated"
+           "Done"
+           "Capacity"]
+          (take-last 5
+                (take-while
+                       ;TODO: take-to on first
+                       #(not-pos? (compare (first %) sprint))
+                   (estimates-all team))))))
+

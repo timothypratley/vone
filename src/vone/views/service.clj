@@ -47,6 +47,20 @@
   (json {:reqId (reqId tqx)
          :table (tabulate content)}))
 
+(defn with-401
+  "Catch and respond on 401 exception"
+  [service method & args]
+  (try+
+     (service (apply method args))
+     ;TODO: wish there was a nicer way to pass on 401
+     (catch [:status 401] []
+       (status 401 "Please login"))
+     (catch Exception e
+       (if (= "java.io.IOException: Authentication failure"
+              (.getMessage e))
+         (status 401 "Please login")
+         (throw e)))))
+
 (defmacro tss
   "Team Sprint Service
    connects a query function to output as json, csv and datasource"
@@ -54,24 +68,17 @@
   `(do
      (defpage ~(str "/json/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint")]}
-              (try+
-                (json (~(symbol query) ~(symbol "team") ~(symbol "sprint")))
-                (catch [:status 401] []
-                  (status 401 "Please login"))))
+              (with-401 json ~(symbol query)
+                        ~(symbol "team") ~(symbol "sprint")))
      (defpage ~(str "/csv/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint")]}
-              (try+
-                (csv (~(symbol query) ~(symbol "team") ~(symbol "sprint")
-                  (str ~query \_ ~(symbol "team") \_ ~(symbol "sprint"))))
-                (catch [:status 401] []
-                  (status 401 "Please login"))))
+              (with-401 csv ~(symbol query)
+                        ~(symbol "team") ~(symbol "sprint")
+                        (str ~query \_ ~(symbol "team") \_ ~(symbol "sprint"))))
      (defpage ~(str "/ds/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint") ~(symbol "tqx")]}
-              (try+
-                (datasource ~(symbol "tqx")
-                  (~(symbol query) ~(symbol "team") ~(symbol "sprint")))
-                (catch [:status 401] []
-                  (status 401 "Please login"))))))
+              (with-401 (partial datasource ~(symbol "tqx")) ~(symbol query)
+                        ~(symbol "team") ~(symbol "sprint")))))
     
 (tss "burndown")
 (tss "burndownComparison")
@@ -83,7 +90,5 @@
 (tss "customersNext")
 
 (defpage "/team-sprints" []
-  (try+
-    (json (team-sprints))
-    (catch [:status 401] []
-      (status 401 "Please login"))))
+  (with-401 json team-sprints))
+

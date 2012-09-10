@@ -2,35 +2,42 @@ function AboutCtrl() {
 
 }
 
-function LoginCtrl($scope, $http, $log, authService) {
+function LoginCtrl($scope, $http, $log, authService, $rootScope) {
     $scope.submit = function () {
     	$log.info("called login");
         $http.post("/login", null,
                 {params: {username: $scope.username, password: $scope.password}})
         .success(function (data, status) {
         	$log.info("Login Confirmed");
+            $rootScope.username = $scope.username;
         	authService.loginConfirmed();
         })
         .error($log.error);
     }
 }
 
-function RetroCtrl($scope, $http, $routeParams, $location, global, $log) {
+function RetroCtrl($scope, $routeParams, $location, $rootScope, $log) {
+    var match = function(sprints) {
+        if ($routeParams.sprint) {
+            $scope.sprint = $routeParams.sprint;
+        }
+        if ($routeParams.team) {
+            $scope.team = $routeParams.team;
+        }
+        if ($scope.team) {
+            $scope.sprints = sprints[$scope.team];
+        }
+        if (!$scope.sprints) {
+            $scope.sprints = [];
+        }
+    };
     $scope.team = null;
     $scope.sprint = null;
     $scope.sprints = [];
-    // TODO: how to register when the http returns?
-	$scope.teamSprints = global.teamSprints;
-    if ($routeParams.sprint) {
-        $scope.sprint = $routeParams.sprint;
-    }
-    if ($routeParams.team) {
-        $scope.team = $routeParams.team;
-        $scope.sprints = $scope.teamSprints[$scope.team];
-        if (!$scope.sprints) {
-            // TODO: this case doesn't make sense if we get the data correctly
-            $scope.sprints = [];
-        }
+    if ($rootScope.teamSprints) {
+        match($rootScope.teamSprints);
+    } else {
+        $rootScope.$watch('teamSprints', match);
     }
     $scope.$watch('team', function(newValue) {
         if (newValue) {

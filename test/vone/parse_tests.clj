@@ -13,9 +13,9 @@
 	                      <Attribute name='EndDate'>2012-08-08</Attribute>
 	                    </Asset>
 	                  </Assets>"
-                 s (java.io.ByteArrayInputStream. (.getBytes x "UTF-8"))
-                 x (xml/parse s)]
-             (is (= (collapse x)
+                 s (java.io.ByteArrayInputStream. (.getBytes x))
+                 m (xml-collapse s)]
+             (is (= (m x)
                     [{:EndDate (parse-date "2012-08-08")
                       :BeginDate (parse-date "2012-07-18")}])))))
 
@@ -32,7 +32,7 @@
  <History total='1' pageSize='2147 483647' pageStart='0'>
  <Asset href='/Tideworks/VersionOne/rest-1.v1/Data/Timebox/475626/1416294' id='Timebox:475626:1416294'>
  <Attribute name=\"Workitems:PrimaryWorkitem[Team.Name='TC Sharks';Status.Name='Accepted'].Estimate[AssetState!='Dead'].@Sum\">57</Attribute></Asset></History>"
-              m (xml2map x)]
+              m (xml-collapse x)]
            (pprint (extract-one m))))
 
 (deftest test-empty-xml
@@ -41,7 +41,7 @@
 <History total='1' pageSize='2147483647' pageStart='0'>
 <Asset href='/Tideworks/VersionOne/rest-1.v1/Data/Timebox/475626/1335982' id='Timebox:475626:1335982'>
 <Attribute name=\"Workitems:PrimaryWorkitem[Team.Name='TC Sharks';Status.Name='Shelved'].Estimate[AssetState!='Dead'].@Sum\" /></Asset></History>"
-          m (xml2map x)]
+          m (xml-collapse x)]
       (pprint m)))
 
 ;(deftest test-names

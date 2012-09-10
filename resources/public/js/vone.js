@@ -1,11 +1,12 @@
 angular.module('vone', ['http-auth-interceptor', 'charts'])
-    .value('global', {})
     .config(function ($routeProvider, $httpProvider) {
         $routeProvider
             .when("/about",
                 {templateUrl: "/about", controller: AboutCtrl})
             .when("/login",
                 {templateUrl: "/login", controller: LoginCtrl})
+            .when("/logout",
+                {templateUrl: "/logout"})
             .when("/retro",
                 {templateUrl: "/retro", controller: RetroCtrl})
             .when("/retro/:team",
@@ -14,10 +15,18 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
                 {templateUrl: "/retro", controller: RetroCtrl})
             .otherwise({redirectTo: "/about"});
     })
-    .directive('authenticate', function($log) {
+    .directive('authenticate', function($rootScope, $http, $log) {
+        $rootScope.logout = function() {
+            $http.get("/logout")
+                .success(function () {
+                    $rootScope.username = null;
+                })
+                .error($log.error);
+        }
     	return function(scope, elem, attrs) {
     		var login = elem.find('#loginbox');
     		scope.$on('event:auth-loginRequired', function() {
+                $rootScope.username = null;
     			login.modal('show');
     		});
     		scope.$on('event:auth-loginConfirmed', function() {
@@ -25,13 +34,19 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
     		});
     	};
     })
-    .run(function ($http, global, $log) {
-        //console.log("running");
-        $http.get("/team-sprints", null)
+    .run(function ($http, $rootScope, $log) {
+        $http.get("/ping")
+            .success(function (data) {
+                $rootScope.username = data;
+            })
+            .error($log.error);
+        // not sure this belongs here,
+        // but I want to avoid calling it everytime retro is visited
+        $http.get("/team-sprints")
             .success(function (data, status) {
                 $log.info("Got team sprints");
                 $log.info(data);
-                global.teamSprints = data;
+                $rootScope.teamSprints = data;
             })
             .error($log.error);
     });
