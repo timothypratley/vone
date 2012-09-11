@@ -42,7 +42,7 @@
   "Converts XML into a map"
   [x]
   (try
-    (-> (java.io.ByteArrayInputStream. (.getBytes x))
+    (-> (java.io.ByteArrayInputStream. (.getBytes x "UTF8"))
       xml/parse
       collapse)
     (catch Exception e

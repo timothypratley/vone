@@ -169,7 +169,7 @@
   [key-selector value-selector c]
   (letfn [(sum-by-key [m entity]
                (map-add m (entity key-selector) (entity value-selector)))]
-    (reduce sum-by-key {} c)))
+    (reduce sum-by-key (sorted-map) c)))
 
 ;public
 (defn customers
@@ -238,4 +238,45 @@
                        ;TODO: take-to on first
                        #(not-pos? (compare (first %) sprint))
                    (estimates-all team))))))
+
+(defn workitems
+  [team sprint asset-type plural]
+  (cons [plural]
+        (let [fields ["Name"]
+              query (str "/Data/" asset-type
+                         "?sel=" (ff fields)
+                         "&where=Timebox.Name='" (codec/url-encode sprint)
+                         "';Team.Name='" (codec/url-encode team)
+                         "';AssetState!='Dead'&sort=Name")]
+          (request-flat query fields))))
+
+;public
+(defn stories
+  "Gets a table of stories"
+  [team sprint]
+  (workitems team sprint "Story" "Stories"))
+
+;public
+(defn defects
+  "Gets a table of defects"
+  [team sprint]
+  (workitems team sprint "Defect" "Defects"))
+
+;public
+(defn testSets
+  "Gets a table of testsets"
+  [team sprint]
+  (workitems team sprint "TestSet" "Test Sets"))
+
+;public
+(defn splits
+  "Gets a table of splits"
+  [team sprint]
+  (cons ["Splits"]
+        (let [fields ["Name"]
+              query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
+                         "&where=Timebox.Name='" (codec/url-encode sprint)
+                         "';Team.Name='" (codec/url-encode team)
+                         "';SplitTo;AssetState!='Dead'&sort=Name")]
+          (request-flat query fields))))
 

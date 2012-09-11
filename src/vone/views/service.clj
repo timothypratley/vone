@@ -79,7 +79,8 @@
               {:keys [~(symbol "team") ~(symbol "sprint") ~(symbol "tqx")]}
               (with-401 (partial datasource ~(symbol "tqx")) ~(symbol query)
                         ~(symbol "team") ~(symbol "sprint")))))
-    
+
+;TODO: figure these out with reflection over team sprint queries public functions
 (tss "burndown")
 (tss "burndownComparison")
 (tss "cumulative")
@@ -88,6 +89,10 @@
 (tss "estimates")
 (tss "customers")
 (tss "customersNext")
+(tss "stories")
+(tss "defects")
+(tss "testSets")
+(tss "splits")
 
 (defpage "/team-sprints" []
   (with-401 json team-sprints))

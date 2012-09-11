@@ -43,6 +43,31 @@ angular.module('charts', [])
 		estimates: {
 			visualization: "Table",
 			title: "Estimates",
+            height: null
+		},
+		stories: {
+			visualization: "Table",
+			title: "Stories",
+            width: null,
+            height: null
+		},
+		defects: {
+			visualization: "Table",
+			title: "Defects",
+            width: null,
+            height: null
+		},
+		testSets: {
+			visualization: "Table",
+			title: "Test Sets",
+            width: null,
+            height: null
+		},
+		splits: {
+			visualization: "Table",
+			title: "Splits",
+            width: null,
+            height: null
 		},
 		customers: {
 			visualization: "PieChart",
