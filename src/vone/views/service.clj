@@ -1,5 +1,6 @@
 (ns vone.views.service
   (:use [vone.models.queries]
+        [vone.helpers]
         [clojure.data.csv :only [write-csv]]
         [noir.core]
         [noir.response :only [json redirect content-type status]]
@@ -93,7 +94,22 @@
 (tss "defects")
 (tss "testSets")
 (tss "splits")
+(tss "participants")
 
 (defpage "/team-sprints" []
   (with-401 json team-sprints))
+
+;TODO: replace all dates
+(defn jsond
+  [m]
+  (json
+    (-> m
+      (update-in ["BeginDate"] readable-date)
+      (update-in ["EndDate"] readable-date))))
+
+(defpage "/sprint-span/:sprint" {:keys [sprint]}
+  (with-401 jsond sprint-span sprint))
+
+(defpage "/foo" []
+         (json (org.joda.time.DateTime.)))
 

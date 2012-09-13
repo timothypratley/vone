@@ -37,3 +37,8 @@
 (defn tostr-date
   [date]
   (format/unparse (format/formatter "yyyy-MM-dd'T23:59:59'") date))
+
+(defn readable-date
+  [date]
+  (format/unparse (format/formatter "MMM-dd") date))
+

@@ -20,7 +20,7 @@
                    "?sel=Name&where=Description;AssetState!='Dead'&sort=Order")]
     (map first (request-flat query ["Name"]))))
 
-;TODO: might not need this anymore?
+;public
 (defn sprint-span
   [sprint]
   (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint "'")]
@@ -189,6 +189,16 @@
   (if-let [next (first (take-after sprint (sprints team)))]
     (customers team next)))
 
+(defn participants-all
+  [team sprint]
+  (let [fields ["Owners.Name"]
+        query (str "/Data/Workitem?sel=" (ff fields)
+                   "&where=Timebox.Name='" (codec/url-encode sprint)
+                   "';Team.Name='" (codec/url-encode team)
+                   "';AssetState!='Dead'")]
+    (set (remove number? (flatten (request-flat query fields))))))
+
+
 ; TODO: limit query to a sprint
 (defn estimates-all
   [team]
@@ -219,25 +229,56 @@
   [in]
   (partition (count in) (apply interleave in))) 
 
+(defn with-capacity
+  [team estimates]
+  (for [stats estimates]
+    (if (zero? (last stats))
+      ;replace capacity with hoursXdaysXpeople for sprint
+      (concat (drop-last stats)
+              [(* 5 14 (count (participants-all
+                                team (first stats))))])
+      stats)))
+
+(defn ratio
+  [a b]
+  (if (zero? b)
+    0
+    (/ (Math/round (* 100.0 (/ a b))) 100.0)))
+
+(defn with-ratios
+  [estimates]
+  (for [stats estimates]
+    (let [estimation (nth stats 6)
+          done (nth stats 7)
+          capacity (nth stats 8)
+          accuracy (ratio estimation done)
+          efficiency (ratio done capacity)]
+      (concat stats [accuracy efficiency]))))
+
 ;public
 (defn estimates
   "Gets a table of estimates and statistics"
   [team sprint]
-  (transpose
-    (cons ["Sprint"
-           "Points"
-           "Stories"
-           "Defects"
-           "Test Sets"
-           "Tests"
-           "Estimated"
-           "Done"
-           "Capacity"]
-          (take-last 5
-                (take-while
-                       ;TODO: take-to on first
-                       #(not-pos? (compare (first %) sprint))
-                   (estimates-all team))))))
+  (let [estimates (take-last 5 (take-while
+                    ;TODO: take-to on first
+                    #(not-pos? (compare (first %) sprint))
+                    (estimates-all team)))
+        estimates (with-capacity team estimates)
+        estimates (with-ratios estimates)]
+    (transpose
+      (cons ["Sprint"
+             "Points"
+             "Stories"
+             "Defects"
+             "Test Sets"
+             "Tests"
+             "Estimated"
+             "Done"
+             "Capacity"
+             "Accuracy (Estimate/Done)"
+             "Efficiency (Done/Capacity)"]
+            estimates))))
+          
 
 (defn workitems
   [team sprint asset-type plural]
@@ -279,4 +320,11 @@
                          "';Team.Name='" (codec/url-encode team)
                          "';SplitTo;AssetState!='Dead'&sort=Name")]
           (request-flat query fields))))
+
+;public
+(defn participants
+  "Get the participants in a sprint"
+  [team sprint]
+  ;TODO: don't really need a separate function for this
+  [(sort (participants-all team sprint)) (sort (participants-all team sprint))])
 

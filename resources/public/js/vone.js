@@ -8,9 +8,9 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
             .when("/logout",
                 {templateUrl: "/logout"})
             .when("/retro",
-                {templateUrl: "/retro", controller: RetroCtrl})
+                {templateUrl: "/selectRetro", controller: RetroCtrl})
             .when("/retro/:team",
-                {templateUrl: "/retro", controller: RetroCtrl})
+                {templateUrl: "/selectRetro", controller: RetroCtrl})
             .when("/retro/:team/:sprint",
                 {templateUrl: "/retro", controller: RetroCtrl})
             .otherwise({redirectTo: "/about"});

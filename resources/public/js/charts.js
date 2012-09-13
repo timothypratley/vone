@@ -43,29 +43,40 @@ angular.module('charts', [])
 		estimates: {
 			visualization: "Table",
 			title: "Estimates",
-            height: null
+            height: null,
+            width: null
+		},
+		participants: {
+			visualization: "Table",
+			title: "Participants",
+            height: null,
+            width: null
 		},
 		stories: {
 			visualization: "Table",
 			title: "Stories",
+            allowHtml: true,
             width: null,
             height: null
 		},
 		defects: {
 			visualization: "Table",
 			title: "Defects",
+            allowHtml: true,
             width: null,
             height: null
 		},
 		testSets: {
 			visualization: "Table",
 			title: "Test Sets",
+            allowHtml: true,
             width: null,
             height: null
 		},
 		splits: {
 			visualization: "Table",
 			title: "Splits",
+            allowHtml: true,
             width: null,
             height: null
 		},
@@ -88,12 +99,13 @@ angular.module('charts', [])
 	    	// TODO: might be nicer to call the static drawchart method...
 	    	// except it uses containerid...
 	    	// https://developers.google.com/chart/interactive/docs/reference#google.visualization.drawchart
-	        chart = new google.visualization[o.visualization](elem[0]);
+	        // or ChartWrapper
+	        // https://developers.google.com/chart/interactive/docs/reference#chartwrapperobject	    };
 
+	        chart = new google.visualization[o.visualization](elem[0]);
 
 	    	query = function() {
 	    		if (!scope.team || !scope.sprint) {
-	    			// TODO: how to clear an element?
 	    			return;
 	    		}
 	    			
@@ -111,10 +123,8 @@ angular.module('charts', [])
 	                    }
 	                });
 	        }
-	        scope.$watch("team", query, true);
-	        // TODO: this triggers twice
-	        //scope.$watch("sprint", query, true);
-	        //TODO: might be better off using a ChartWrapper
-	        //https://developers.google.com/chart/interactive/docs/reference#chartwrapperobject	    };
+
+            // TODO: don't really want to watch
+            scope.$watch("sprint", query, true);
 	    };
 	});

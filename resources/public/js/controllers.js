@@ -16,7 +16,7 @@ function LoginCtrl($scope, $http, $log, authService, $rootScope) {
     }
 }
 
-function RetroCtrl($scope, $routeParams, $location, $rootScope, $log) {
+function RetroCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
     var match = function(sprints) {
         if ($routeParams.sprint) {
             $scope.sprint = $routeParams.sprint;
@@ -29,6 +29,14 @@ function RetroCtrl($scope, $routeParams, $location, $rootScope, $log) {
         }
         if (!$scope.sprints) {
             $scope.sprints = [];
+        }
+        if ($scope.sprint) {
+            $http.get("/sprint-span/" + $scope.sprint)
+                .success(function (data) {
+                    $scope.sprintBegin = data.BeginDate;
+                    $scope.sprintEnd = data.EndDate;
+                })
+                .error($log.error);
         }
     };
     $scope.team = null;

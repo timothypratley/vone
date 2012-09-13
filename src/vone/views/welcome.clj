@@ -113,9 +113,7 @@
              [:div (label "team" "Team") (text-field "team")]
              (submit-button "Get Cumulative Flow"))))
 
-(defpage "/retro" []
-  (html
-    [:h1 "Retrospective: {{sprint.Name}}"]
+(def select-retro
     [:div
      [:select {:ng-model "team"
                :ng-options "key as key for (key, value) in teamSprints"}
@@ -123,8 +121,17 @@
      [:select {:ng-model "sprint"
                :ng-options "s for s in sprints"
                :ng-visible "sprints"}
-      [:option {:value ""} "-- choose sprint --"]]
-     [:h1 "{{sprint.start}} {{sprint.end}}"]]
+      [:option {:value ""} "-- choose sprint --"]]])
+
+(defpage "/selectRetro" []
+  (html
+    [:h1 "Retrospective:"]
+    select-retro))
+
+(defpage "/retro" []
+  (html
+    [:h1 "Retrospective: {{sprintBegin}} {{sprintEnd}}"]
+    select-retro
     [:hr]
     [:div.report {:ng-visible "team && sprint"}
      [:div {:chart "burndown"}]
@@ -133,6 +140,7 @@
      [:div {:chart "cumulativePrevious"}]
      [:div {:chart "velocity"}]
      [:div {:chart "estimates"}]
+     [:div {:chart "participants"}]
      [:div {:chart "stories"}]
      [:div {:chart "defects"}]
      [:div {:chart "testSets"}]
