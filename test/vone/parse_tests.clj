@@ -1,6 +1,8 @@
 (ns vone.parse-tests
   (:require [noir.session :as session])
-  (:use [vone.models.queries]
+  (:use [vone.helpers]
+        [vone.models.queries]
+        [vone.models.version-one-request]
         [clojure.test]
         [clojure.pprint]
         [clojure.xml :as xml]))
@@ -13,11 +15,10 @@
 	                      <Attribute name='EndDate'>2012-08-08</Attribute>
 	                    </Asset>
 	                  </Assets>"
-                 s (java.io.ByteArrayInputStream. (.getBytes x))
-                 m (xml-collapse s)]
-             (is (= (m x)
-                    [{:EndDate (parse-date "2012-08-08")
-                      :BeginDate (parse-date "2012-07-18")}])))))
+                 m (xml-collapse x)]
+             (is (= m
+                    [{"EndDate" (parse-date "2012-08-08")
+                      "BeginDate" (parse-date "2012-07-18")}])))))
 
 
 ;TODO: store auth in config file?
@@ -33,7 +34,7 @@
  <Asset href='/Tideworks/VersionOne/rest-1.v1/Data/Timebox/475626/1416294' id='Timebox:475626:1416294'>
  <Attribute name=\"Workitems:PrimaryWorkitem[Team.Name='TC Sharks';Status.Name='Accepted'].Estimate[AssetState!='Dead'].@Sum\">57</Attribute></Asset></History>"
               m (xml-collapse x)]
-           (pprint (extract-one m))))
+           (pprint (singular m))))
 
 (deftest test-empty-xml
     (let [x 

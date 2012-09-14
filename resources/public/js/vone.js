@@ -13,6 +13,8 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
                 {templateUrl: "/selectRetro", controller: RetroCtrl})
             .when("/retro/:team/:sprint",
                 {templateUrl: "/retro", controller: RetroCtrl})
+            .when("/projections",
+                {templateUrl: "/projections", controller: ProjectionsCtrl})
             .otherwise({redirectTo: "/about"});
     })
     .directive('authenticate', function($rootScope, $http, $log) {
@@ -42,7 +44,7 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
             .error($log.error);
         // TODO: not sure this belongs here,
         // but I want to avoid calling it everytime retro is visited
-        $http.get("/team-sprints")
+        $http.get("/json/team-sprints")
             .success(function (data, status) {
                 $log.info("Got team sprints");
                 $log.info(data);

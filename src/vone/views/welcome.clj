@@ -33,7 +33,7 @@
         [:li.divider-vertical]
         [:li (link-to "/#/retro" "Retrospective")]
         [:li.divider-vertical]
-        [:li (link-to "/#/proj" "Projection")]
+        [:li (link-to "/#/projections" "Projections")]
         [:li.divider-vertical]]
        [:div.login.ng-cloak.pull-right {:ng-show "!username"}
         (link-to "#/login" "Login")]
@@ -149,4 +149,9 @@
      [:div "Summary"]
      [:div {:chart "customersNext"}]
      [:div "Epics"]]))
+
+(defpage "/projections" []
+  (html
+    [:h1 "Projections"]
+    [:div {:chart "projections"}]))
 

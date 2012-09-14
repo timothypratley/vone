@@ -1,10 +1,22 @@
 (ns vone.views.service
+  (:require [cheshire.custom :as custom])
   (:use [vone.models.queries]
         [vone.helpers]
         [clojure.data.csv :only [write-csv]]
         [noir.core]
-        [noir.response :only [json redirect content-type status]]
+        [noir.response :only [redirect content-type status]]
         [slingshot.slingshot :only [try+]]))
+
+(custom/add-encoder org.joda.time.DateTime
+  (fn [d jsonGenerator]
+    (.writeString jsonGenerator (readable-date d))))
+
+(defn json
+  "Wraps the response in the json content type
+   and generates JSON from the content"
+  [content]
+  (content-type "application/json; charset=utf-8"
+                (custom/generate-string content)))
 
 (defn csv
   [content filename]
@@ -96,20 +108,14 @@
 (tss "splits")
 (tss "participants")
 
-(defpage "/team-sprints" []
+(defpage "/json/team-sprints" []
   (with-401 json team-sprints))
 
-;TODO: replace all dates
-(defn jsond
-  [m]
-  (json
-    (-> m
-      (update-in ["BeginDate"] readable-date)
-      (update-in ["EndDate"] readable-date))))
+(defpage "/json/sprint-span/:sprint" {:keys [sprint]}
+  (with-401 json sprint-span sprint))
 
-(defpage "/sprint-span/:sprint" {:keys [sprint]}
-  (with-401 jsond sprint-span sprint))
-
-(defpage "/foo" []
-         (json (org.joda.time.DateTime.)))
+(defpage "/json/projections" []
+  (with-401 json projections))
+(defpage "/ds/projections" {:keys [tqx]}
+  (with-401 (partial datasource tqx projections)))
 

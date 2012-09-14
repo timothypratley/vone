@@ -87,8 +87,15 @@ angular.module('charts', [])
 		customersNext: {
 			visualization: "PieChart",
 			title: "Customer Focus Next Sprint"
+		},
+		projections: {
+			visualization: "Table",
+			title: "Projections",
+            height: null,
+            width: null
 		}
 	})
+// TODO: not every chart needs a sprint and team! make a new directive?
 	.directive('chart', function(options, $log) {
 	    return function(scope, elem, attrs) {
 	        var chart, query, o = {};

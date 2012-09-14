@@ -1,6 +1,10 @@
 (ns vone.helpers
    (:require [clj-time.format :as format]))
 
+(defn transpose
+  [in]
+  (partition (count in) (apply interleave in))) 
+
 ; http://biesnecker.com/infinite-lazy-seqs-clojure-joda-time.html
 ;; basic functions to increment or decrement a date
 (defn inc-date
@@ -40,5 +44,9 @@
 
 (defn readable-date
   [date]
-  (format/unparse (format/formatter "MMM-dd") date))
+  (format/unparse (format/formatter "MMM dd") date))
+
+(defn basic-date
+  [date]
+  (format/unparse (format/formatters :basic-date) date))
 

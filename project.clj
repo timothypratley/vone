@@ -2,6 +2,7 @@
             :description "FIXME: write this!"
             :dependencies [[org.clojure/clojure "1.3.0"]
                            [noir "1.2.1"]
+                           [cheshire "4.0.2"]
                            [clj-http-lite "0.1.0"]
                            [slingshot "0.10.3"]
                            [clj-time "0.4.4"]

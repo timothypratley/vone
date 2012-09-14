@@ -6,12 +6,12 @@
 
 ;TODO: cache answers
 
-(defn ff
+(defn- ff
   "format fields for a query string"
   [fields]
   (apply str (interpose \, fields)))
 
-(defn names
+(defn- names
   "Retrieves a sorted seqence of asset names"
   [asset]
   ;TODO: filtering empty descriptions because there is a story status
@@ -20,13 +20,12 @@
                    "?sel=Name&where=Description;AssetState!='Dead'&sort=Order")]
     (map first (request-flat query ["Name"]))))
 
-;public
 (defn sprint-span
   [sprint]
   (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint "'")]
     (request-transform query first)))
 
-(defn setify
+(defn- setify
   "Creates sets from a collection entities (to remove duplicates)"
   [key-selector value-selector c]
   (into {} (for [entity c]
@@ -45,7 +44,7 @@
     (request-transform query (partial setify name sprint))))
 
 ;TODO: this is getting called multiple times, it doesn't need to be
-(defn velocity-all
+(defn- velocity-all
   [team]
   (let [sum-story-points (str "Workitems:PrimaryWorkitem[Team.Name='" (codec/url-encode team)
                               "';AssetState!='Dead'].Estimate.@Sum")
@@ -56,17 +55,16 @@
 
 (def not-pos? (complement pos?))
 (def not-neg? (complement neg?))
-(defn take-before
+(defn- take-before
   [sprint sprints]
   (take-while #(neg? (compare % sprint)) sprints))
-(defn take-to
+(defn- take-to
   [sprint sprints]
   (take-while #(not-pos? (compare % sprint)) sprints))
-(defn take-after
+(defn- take-after
   [sprint sprints]
   (drop-while #(not-pos? (compare % sprint)) sprints))
 
-;public
 (defn velocity
   "The total story points done for the last 5 sprints"
   [team sprint]
@@ -78,12 +76,12 @@
                        #(not-pos? (compare (first %) sprint))
                                  sprints)))))
 
-(defn sprints
+(defn- sprints
   "Get the name of all sprints that a particular team has done work in"
   [team]
   (map first (velocity-all team)))
 
-(defn for-sprint
+(defn- for-sprint
   "Queries f for each sprint day"
   [team sprint f]
   (let [team (codec/url-encode team)
@@ -96,12 +94,12 @@
                                  (inc-date-stream begin)))]
     (pmap (partial f team sprint) days)))
 
-(defn singular
+(defn- singular
   "Get the value from a collection of one map with only one key"
   [col]
   (-> col first vals first))
 
-(defn todo-on
+(defn- todo-on
   "Get the todo hours on a particular day"
   [team sprint date]
   (let [query (str "/Hist/Timebox?asof=" (tostr-date date)
@@ -110,7 +108,6 @@
                    "';AssetState!='Dead'].ToDo.@Sum")]
     (request-transform query singular)))
 
-;public
 ;TODO: There is no need to get a burndown if we have the comparison? would have to manage data clientside though.
 (defn burndown
   "Gets a table of todo hours per day"
@@ -119,7 +116,6 @@
         (map list (iterate inc 1)
              (for-sprint team sprint todo-on))))
 
-;public
 (defn burndownComparison
   "Gets a table of the past 4 sprints burndowns"
   [team sprint]
@@ -129,7 +125,7 @@
           (map cons (iterate inc 1)
                (apply map list (map #(for-sprint team % todo-on) sprints))))))
 
-(defn cumulative-on
+(defn- cumulative-on
   [statuses team sprint date]
   (let [status-field #(str "Workitems:PrimaryWorkitem[Team.Name='" team
                            "';Status.Name='" (codec/url-encode %)
@@ -141,7 +137,6 @@
         result (request-flat query fields)]
     (first result)))
 
-;public
 (defn cumulative
   "Gets a table of the cumulative flow (story points by status per day)"
   [team sprint]
@@ -150,18 +145,17 @@
           (map cons (iterate inc 1)
                (for-sprint team sprint (partial cumulative-on statuses))))))
 
-;public
 (defn cumulativePrevious
   "Gets a table of the previous sprint cumulative flow"
   [team sprint]
   (if-let [previous (last (take-before sprint (sprints team)))]
     (cumulative team previous)))
 
-(defn map-add
+(defn- map-add
   [m k v]
   (update-in m [k] (fnil + 0) v))
 
-(defn summize
+(defn- summize
   "Given a collection of maps,
    sums up values in those maps retrieved with value-selector
    by making keys retrieved with key-selector,
@@ -171,7 +165,6 @@
                (map-add m (entity key-selector) (entity value-selector)))]
     (reduce sum-by-key (sorted-map) c)))
 
-;public
 (defn customers
   "Gets a table of story points per customer"
   [team sprint]
@@ -182,14 +175,13 @@
 	                   "';AssetState!='Dead'&sel=Estimate,Parent.Name")]
 	    (request-transform query (partial summize "Parent.Name" "Estimate")))))
 
-;public
 (defn customersNext
   "Gets a table of story points per customer for the next sprint"
   [team sprint]
   (if-let [next (first (take-after sprint (sprints team)))]
     (customers team next)))
 
-(defn participants-all
+(defn- participants-all
   [team sprint]
   (let [fields ["Owners.Name"]
         query (str "/Data/Workitem?sel=" (ff fields)
@@ -200,7 +192,7 @@
 
 
 ; TODO: limit query to a sprint
-(defn estimates-all
+(defn- estimates-all
   [team]
   (let [t (str "[Team.Name='" (codec/url-encode team) "';AssetState!='Dead']")
         sum-point-estimates (str "Workitems:PrimaryWorkitem" t ".Estimate.@Sum")
@@ -225,11 +217,7 @@
                    "&where=" sum-point-estimates ">'0'&sort=EndDate")]
     (request-flat query fields)))
 
-(defn transpose
-  [in]
-  (partition (count in) (apply interleave in))) 
-
-(defn with-capacity
+(defn- with-capacity
   [team estimates]
   (for [stats estimates]
     (if (zero? (last stats))
@@ -239,13 +227,13 @@
                                 team (first stats))))])
       stats)))
 
-(defn ratio
+(defn- ratio
   [a b]
   (if (zero? b)
     0
     (/ (Math/round (* 100.0 (/ a b))) 100.0)))
 
-(defn with-ratios
+(defn- with-ratios
   [estimates]
   (for [stats estimates]
     (let [estimation (nth stats 6)
@@ -255,7 +243,6 @@
           efficiency (ratio done capacity)]
       (concat stats [accuracy efficiency]))))
 
-;public
 (defn estimates
   "Gets a table of estimates and statistics"
   [team sprint]
@@ -280,7 +267,7 @@
             estimates))))
           
 
-(defn workitems
+(defn- workitems
   [team sprint asset-type plural]
   (cons [plural]
         (let [fields ["Name"]
@@ -291,25 +278,21 @@
                          "';AssetState!='Dead'&sort=Name")]
           (request-flat query fields))))
 
-;public
 (defn stories
   "Gets a table of stories"
   [team sprint]
   (workitems team sprint "Story" "Stories"))
 
-;public
 (defn defects
   "Gets a table of defects"
   [team sprint]
   (workitems team sprint "Defect" "Defects"))
 
-;public
 (defn testSets
   "Gets a table of testsets"
   [team sprint]
   (workitems team sprint "TestSet" "Test Sets"))
 
-;public
 (defn splits
   "Gets a table of splits"
   [team sprint]
@@ -321,10 +304,18 @@
                          "';SplitTo;AssetState!='Dead'&sort=Name")]
           (request-flat query fields))))
 
-;public
 (defn participants
   "Get the participants in a sprint"
   [team sprint]
   ;TODO: don't really need a separate function for this
   [(sort (participants-all team sprint)) (sort (participants-all team sprint))])
+
+(defn projections
+  "Get the projected work"
+  []
+  (let [fields ["Estimate" "Parent.Name" "Team.Name" "Timebox.EndDate"]
+        query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
+                   "&where=Estimate;Team.Name;Timebox.EndDate")
+        result (request-flat query fields)]
+    (group-by #(nth % 2) result)))
 
