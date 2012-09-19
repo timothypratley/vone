@@ -1,6 +1,6 @@
 # vone
 
-A website written in noir. 
+Custom reporting for Version One
 
 ## Usage
 
@@ -8,10 +8,10 @@ A website written in noir.
 lein deps
 lein run
 ```
+lein ring uberwar
 
 ## License
 
-Copyright (C) 2011 FIXME
-
+Copyright (C) 2011
 Distributed under the Eclipse Public License, the same as Clojure.
 

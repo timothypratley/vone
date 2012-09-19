@@ -146,9 +146,10 @@
      [:div {:chart "testSets"}]
      [:div {:chart "splits"}]
      [:div {:chart "customers"}]
-     [:div "Summary"]
+     ;[:div "Summary"]
      [:div {:chart "customersNext"}]
-     [:div "Epics"]]))
+     ;[:div "Epics"]
+     ]))
 
 (defpage "/projections" []
   (html
