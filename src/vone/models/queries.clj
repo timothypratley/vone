@@ -121,38 +121,14 @@
 (defn burndownComparison
   "Gets a table of the past 4 sprints burndowns"
   [team sprint]
-  (let [s (take-last 4
-                     (take-to sprint (sprints team)))]
+  (let [s (->> (sprints team)
+            (take-to sprint)
+            (take-last 4)
+            reverse)]
     (if (not-empty s)
       (cons (cons "Day" s)
             (map cons (iterate inc 1)
                  (apply map list (map #(for-sprint team % todo-on) s)))))))
-
-(defn- cumulative-on
-  [statuses team sprint date]
-  (let [status-field #(str "Workitems:PrimaryWorkitem[Team.Name='" team
-                           "';Status.Name='" (codec/url-encode %)
-                           "';AssetState!='Dead'].Estimate.@Sum")
-        fields (map status-field statuses)
-        query (str "/Hist/Timebox?asof=" (tostr-date date)
-                   "&where=Name='" sprint
-                   "'&sel=" (ff fields))
-        result (request-flat query fields)]
-    (first result)))
-
-(defn cumulative
-  "Gets a table of the cumulative flow (story points by status per day)"
-  [team sprint]
-  (let [statuses (reverse (names "StoryStatus"))]
-    (cons (cons "Day" statuses)
-          (map cons (iterate inc 1)
-               (for-sprint team sprint (partial cumulative-on statuses))))))
-
-(defn cumulativePrevious
-  "Gets a table of the previous sprint cumulative flow"
-  [team sprint]
-  (if-let [previous (last (take-before sprint (sprints team)))]
-    (cumulative team previous)))
 
 (defn- map-add
   [m k v]
@@ -170,6 +146,31 @@
                   k (if (number? k) "None" k)]
                (map-add m k (entity value-selector))))]
     (reduce sum-by-key (sorted-map) c)))
+
+(defn- cumulative-on
+  [team sprint date]
+  (let [query (str "/Hist/PrimaryWorkitem?asof=" (tostr-date date)
+                   "&where=Timebox.Name='" sprint
+                   "';Team.Name='" team
+                   "';AssetState!='Dead'&sel=Status.Name,Estimate")]
+    (request-transform query (partial summize "Status.Name" "Estimate"))))
+
+(defn cumulative
+  "Gets a table of the cumulative flow (story points by status per day)"
+  [team sprint]
+  (let [results (for-sprint team sprint cumulative-on)
+        ; TODO: apply order sort
+        statuses (keys (apply merge results))
+        status-points (fn [m] (map #(get m % 0) statuses))]
+    (cons (cons "Day" statuses)
+          (map cons (iterate inc 1)
+               (map status-points results)))))
+
+(defn cumulativePrevious
+  "Gets a table of the previous sprint cumulative flow"
+  [team sprint]
+  (if-let [previous (last (take-before sprint (sprints team)))]
+    (cumulative team previous)))
 
 (defn customers
   "Gets a table of story points per customer"

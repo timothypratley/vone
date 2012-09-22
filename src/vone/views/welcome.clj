@@ -20,7 +20,7 @@
              :href "/img/favicon.ico"
              :type "image/x-icon"}]
      (include-css "/css/bootstrap.min.css")
-     (include-css "/css/bootstrap-responsive.min.css")]
+     (include-css "/css/vone.css")]
     
     [:body {:authenticate "loginbox"}
      
@@ -136,16 +136,16 @@
     [:div.report {:ng-visible "team && sprint"}
      [:div {:chart "burndown"}]
      [:div {:chart "burndownComparison"}]
-     [:div {:chart "cumulative"}]
+     [:div.break {:chart "cumulative"}]
      [:div {:chart "cumulativePrevious"}]
-     [:div {:chart "velocity"}]
+     [:div.break {:chart "velocity"}]
      [:div {:chart "estimates"}]
      [:div {:chart "participants"}]
-     [:div {:chart "stories"}]
+     [:div.break {:chart "stories"}]
      [:div {:chart "defects"}]
      [:div {:chart "testSets"}]
      [:div {:chart "splits"}]
-     [:div {:chart "customers"}]
+     [:div.break {:chart "customers"}]
      ;[:div "Summary"]
      [:div {:chart "customersNext"}]
      ;[:div "Epics"]
