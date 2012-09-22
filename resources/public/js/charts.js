@@ -43,12 +43,12 @@ angular.module('charts', [])
 		estimates: {
 			visualization: "Table",
 			title: "Estimates",
-            height: null,
+            height: null
 		},
 		participants: {
 			visualization: "Table",
 			title: "Participants",
-            height: null,
+            height: null
 		},
 		stories: {
 			visualization: "Table",
@@ -76,7 +76,7 @@ angular.module('charts', [])
 		},
 		customers: {
 			visualization: "PieChart",
-			title: "Customer Focus - Points per Customer",
+			title: "Customer Focus - Points per Customer"
 		},
 		customersNext: {
 			visualization: "PieChart",
@@ -85,7 +85,7 @@ angular.module('charts', [])
 		projections: {
 			visualization: "Table",
 			title: "Projections",
-            height: null,
+            height: null
 		}
 	})
 // TODO: not every chart needs a sprint and team! make a new directive?
