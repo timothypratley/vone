@@ -107,6 +107,7 @@
 (tss "testSets")
 (tss "splits")
 (tss "participants")
+(tss "feedback")
 
 (defpage "/json/team-sprints" []
   (with-401 json team-sprints))

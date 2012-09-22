@@ -148,7 +148,9 @@
      [:div {:chart "customers"}]
      [:div "Summary"]
      [:div {:chart "customersNext"}]
-     [:div "Epics"]]))
+     [:div "Epics"]
+     ;TODO: why does this have to be unsafe?
+     [:div {:ng-bind-html-unsafe "feedback"}]]))
 
 (defpage "/projections" []
   (html

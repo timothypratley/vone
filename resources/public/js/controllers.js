@@ -67,6 +67,11 @@ function RetroCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
                     $scope.sprintEnd = data.EndDate;
                 })
                 .error($log.error);
+            $http.get("/json/feedback/" + $scope.team + '/' + $scope.sprint)
+                .success(function (data) {
+                    $scope.feedback = angular.fromJson(data);
+                })
+                .error($log.error);
         }
     };
     $scope.team = null;

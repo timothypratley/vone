@@ -319,3 +319,11 @@
         result (request-flat query fields)]
     (group-by #(nth % 2) result)))
 
+(defn feedback
+  "Get the feedback for a retrospective"
+  [team sprint]
+  (let [query (str "/Data/Retrospective?sel=Summary"
+                   "&where=Team.Name='" (codec/url-encode team)
+                   "';Timebox.Name='" (codec/url-encode sprint) "'")]
+    (request-transform query singular)))
+
