@@ -84,11 +84,7 @@ function RetroCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
     }
     $scope.$watch('team', function(newValue) {
         if (newValue) {
-            if ($scope.sprints.indexOf($scope.sprint) < 0) {
-                $location.path('/retro/' + newValue);
-            } else {
-                $location.path('/retro/' + newValue + '/' + $scope.sprint);
-            }
+            $location.path('/retro/' + newValue);
         }
     }, true);
     $scope.$watch('sprint', function(newValue) {

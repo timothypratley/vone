@@ -59,7 +59,8 @@
 	  (try
 	    (transform result)
 	    (catch Exception e
-	      (println "transform failed:" result)))))
+	      (println "transform failed:" result)
+          (throw e)))))
 
 (defn unmap
   [fields m]

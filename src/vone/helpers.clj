@@ -3,7 +3,10 @@
 
 (defn transpose
   [in]
-  (partition (count in) (apply interleave in))) 
+  (let [c (count in)]
+    (partition c (if (<= c 1)
+                   in
+                   (apply interleave in)))))
 
 ; http://biesnecker.com/infinite-lazy-seqs-clojure-joda-time.html
 ;; basic functions to increment or decrement a date

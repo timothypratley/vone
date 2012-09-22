@@ -1,8 +1,8 @@
 angular.module('charts', [])
 	.value('options', {
 		general: {
-			width: 800,
-			height: 400
+			width: 1000,
+			height: 500
 		},
 		burndown: {
 			visualization: "AreaChart",
@@ -43,46 +43,40 @@ angular.module('charts', [])
 		estimates: {
 			visualization: "Table",
 			title: "Estimates",
-            height: null,
-            width: null
+            height: null
 		},
 		participants: {
 			visualization: "Table",
 			title: "Participants",
-            height: null,
-            width: null
+            height: null
 		},
 		stories: {
 			visualization: "Table",
 			title: "Stories",
             allowHtml: true,
-            width: null,
             height: null
 		},
 		defects: {
 			visualization: "Table",
 			title: "Defects",
             allowHtml: true,
-            width: null,
             height: null
 		},
 		testSets: {
 			visualization: "Table",
 			title: "Test Sets",
             allowHtml: true,
-            width: null,
             height: null
 		},
 		splits: {
 			visualization: "Table",
 			title: "Splits",
             allowHtml: true,
-            width: null,
             height: null
 		},
 		customers: {
 			visualization: "PieChart",
-			title: "Customer Focus - Points per Customer",
+			title: "Customer Focus - Points per Customer"
 		},
 		customersNext: {
 			visualization: "PieChart",
@@ -91,8 +85,7 @@ angular.module('charts', [])
 		projections: {
 			visualization: "Table",
 			title: "Projections",
-            height: null,
-            width: null
+            height: null
 		}
 	})
 // TODO: not every chart needs a sprint and team! make a new directive?

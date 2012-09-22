@@ -28,20 +28,21 @@
 (defn- setify
   "Creates sets from a collection entities (to remove duplicates)"
   [key-selector value-selector c]
-  (into {} (for [entity c]
+  (into {} (for [entity c
+                 :when (not (number? (get entity value-selector)))]
              [(get entity key-selector)
               (apply sorted-set-by #(compare %2 %1) ;descending
-                     (get entity value-selector))])))
+                   (get entity value-selector))])))
 
 ;TODO: could very well calculate the velocity here also!
 (defn team-sprints
   "Retrieves all teams and the sprints they have particpated in"
   []
   (let [sprint "Workitems:PrimaryWorkitem.Timebox.Name"
-        name "Name"
-        fields [name sprint]
+        n "Name"
+        fields [n sprint]
         query (str "/Data/Team?sel=" (ff fields) "&sort=Name")]
-    (request-transform query (partial setify name sprint))))
+    (request-transform query (partial setify n sprint))))
 
 ;TODO: this is getting called multiple times, it doesn't need to be
 (defn- velocity-all
@@ -55,26 +56,27 @@
 
 (def not-pos? (complement pos?))
 (def not-neg? (complement neg?))
+(defn- count-to
+  [sprint sprints]
+  (inc (.indexOf sprints sprint)))
 (defn- take-before
   [sprint sprints]
-  (take-while #(neg? (compare % sprint)) sprints))
+  (take-while (partial not= sprint) sprints))
 (defn- take-to
   [sprint sprints]
-  (take-while #(not-pos? (compare % sprint)) sprints))
+  (take (count-to sprint sprints) sprints))
 (defn- take-after
   [sprint sprints]
-  (drop-while #(not-pos? (compare % sprint)) sprints))
+  (drop 1 (drop-while (partial not= sprint) sprints)))
 
 (defn velocity
   "The total story points done for the last 5 sprints"
   [team sprint]
-  (let [sprints (velocity-all team)]
+  (let [sprints (velocity-all team)
+        c (count-to sprint (map first sprints))]
     (cons ["Sprint" "Story Points"]
           (take-last 5
-                     (take-while
-                       ;TODO: take-to on first
-                       #(not-pos? (compare (first %) sprint))
-                                 sprints)))))
+                     (take c sprints)))))
 
 (defn- sprints
   "Get the name of all sprints that a particular team has done work in"
@@ -119,37 +121,14 @@
 (defn burndownComparison
   "Gets a table of the past 4 sprints burndowns"
   [team sprint]
-  (let [sprints (take-last 4
-                           (take-to sprint (sprints team)))]
-    (cons (cons "Day" sprints)
-          (map cons (iterate inc 1)
-               (apply map list (map #(for-sprint team % todo-on) sprints))))))
-
-(defn- cumulative-on
-  [statuses team sprint date]
-  (let [status-field #(str "Workitems:PrimaryWorkitem[Team.Name='" team
-                           "';Status.Name='" (codec/url-encode %)
-                           "';AssetState!='Dead'].Estimate.@Sum")
-        fields (map status-field statuses)
-        query (str "/Hist/Timebox?asof=" (tostr-date date)
-                   "&where=Name='" sprint
-                   "'&sel=" (ff fields))
-        result (request-flat query fields)]
-    (first result)))
-
-(defn cumulative
-  "Gets a table of the cumulative flow (story points by status per day)"
-  [team sprint]
-  (let [statuses (reverse (names "StoryStatus"))]
-    (cons (cons "Day" statuses)
-          (map cons (iterate inc 1)
-               (for-sprint team sprint (partial cumulative-on statuses))))))
-
-(defn cumulativePrevious
-  "Gets a table of the previous sprint cumulative flow"
-  [team sprint]
-  (if-let [previous (last (take-before sprint (sprints team)))]
-    (cumulative team previous)))
+  (let [s (->> (sprints team)
+            (take-to sprint)
+            (take-last 4)
+            reverse)]
+    (if (not-empty s)
+      (cons (cons "Day" s)
+            (map cons (iterate inc 1)
+                 (apply map list (map #(for-sprint team % todo-on) s)))))))
 
 (defn- map-add
   [m k v]
@@ -162,8 +141,36 @@
    returning a map of the totals"
   [key-selector value-selector c]
   (letfn [(sum-by-key [m entity]
-               (map-add m (entity key-selector) (entity value-selector)))]
+            (let [k (entity key-selector)
+                  ;TODO: is there a nicer way to deal with empty values?
+                  k (if (number? k) "None" k)]
+               (map-add m k (entity value-selector))))]
     (reduce sum-by-key (sorted-map) c)))
+
+(defn- cumulative-on
+  [team sprint date]
+  (let [query (str "/Hist/PrimaryWorkitem?asof=" (tostr-date date)
+                   "&where=Timebox.Name='" sprint
+                   "';Team.Name='" team
+                   "';AssetState!='Dead'&sel=Status.Name,Estimate")]
+    (request-transform query (partial summize "Status.Name" "Estimate"))))
+
+(defn cumulative
+  "Gets a table of the cumulative flow (story points by status per day)"
+  [team sprint]
+  (let [results (for-sprint team sprint cumulative-on)
+        ; TODO: apply order sort
+        statuses (keys (apply merge results))
+        status-points (fn [m] (map #(get m % 0) statuses))]
+    (cons (cons "Day" statuses)
+          (map cons (iterate inc 1)
+               (map status-points results)))))
+
+(defn cumulativePrevious
+  "Gets a table of the previous sprint cumulative flow"
+  [team sprint]
+  (if-let [previous (last (take-before sprint (sprints team)))]
+    (cumulative team previous)))
 
 (defn customers
   "Gets a table of story points per customer"
@@ -188,6 +195,8 @@
                    "&where=Timebox.Name='" (codec/url-encode sprint)
                    "';Team.Name='" (codec/url-encode team)
                    "';AssetState!='Dead'")]
+                  ;TODO: is there a nicer way to deal with empty values
+                  ; rather than number?
     (set (remove number? (flatten (request-flat query fields))))))
 
 
@@ -246,26 +255,25 @@
 (defn estimates
   "Gets a table of estimates and statistics"
   [team sprint]
-  (let [estimates (take-last 5 (take-while
-                    ;TODO: take-to on first
-                    #(not-pos? (compare (first %) sprint))
-                    (estimates-all team)))
+  (let [estimates (estimates-all team)
+        c (count-to sprint (map first estimates))
+        estimates (take-last 5 (take c estimates))
         estimates (with-capacity team estimates)
         estimates (with-ratios estimates)]
-    (transpose
-      (cons ["Sprint"
-             "Points"
-             "Stories"
-             "Defects"
-             "Test Sets"
-             "Tests"
-             "Estimated"
-             "Done"
-             "Capacity"
-             "Accuracy (Estimate/Done)"
-             "Efficiency (Done/Capacity)"]
-            estimates))))
-          
+    (if (not-empty estimates)
+      (transpose
+        (cons ["Sprint"
+               "Points"
+               "Stories"
+               "Defects"
+               "Test Sets"
+               "Tests"
+               "Estimated"
+               "Done"
+               "Capacity"
+               "Accuracy (Estimate/Done)"
+               "Efficiency (Done/Capacity)"]
+              estimates)))))
 
 (defn- workitems
   [team sprint asset-type plural]
