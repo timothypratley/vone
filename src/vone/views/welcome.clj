@@ -146,7 +146,8 @@
      [:div {:chart "testSets"}]
      [:div {:chart "splits"}]
      [:div.break {:chart "customers"}]
-     [:div "Epics"]
+     ;TODO:
+     ;[:div "Epics"]
      [:div {:chart "customersNext"}]
      ;TODO: why does this have to be unsafe?
      [:div {:ng-bind-html-unsafe "feedback"}]]))

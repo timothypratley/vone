@@ -11,19 +11,19 @@
   [fields]
   (apply str (interpose \, fields)))
 
-(defn- names
-  "Retrieves a sorted seqence of asset names"
-  [asset]
-  ;TODO: filtering empty descriptions because there is a story status
-  ;"Incomplete"!?!?
-  (let [query (str "/Data/" asset
-                   "?sel=Name&where=Description;AssetState!='Dead'&sort=Order")]
-    (map first (request-flat query ["Name"]))))
-
 (defn sprint-span
   [sprint]
   (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint "'")]
     (request-transform query first)))
+
+(defn- names
+  "Retrieves a sorted seqence of asset names"
+  [asset asof]
+  (let [ query (str "/Hist/" asset
+                   "?asof=" (tostr-date asof)
+                   "&sel=Name&where=Description;AssetState!='Dead'&sort=Order")]
+    (println query)
+    (map first (request-flat query ["Name"]))))
 
 (defn- setify
   "Creates sets from a collection entities (to remove duplicates)"
@@ -85,16 +85,18 @@
 
 (defn- for-sprint
   "Queries f for each sprint day"
-  [team sprint f]
-  (let [team (codec/url-encode team)
-        sprint (codec/url-encode sprint) 
-        span (sprint-span sprint)
-        begin (span "BeginDate")
-        end (span "EndDate")
-        days (take-while #(time/before? % end)
-                         (filter (complement weekend?)
-                                 (inc-date-stream begin)))]
-    (pmap (partial f team sprint) days)))
+  ([team sprint f]
+   (let [span (sprint-span (codec/url-encode sprint)) 
+         begin (time/plus (span "BeginDate") (time/days 1))
+         end (span "EndDate")]
+     (for-sprint team sprint begin end f)))
+  ([team sprint begin end f]
+   (let [team (codec/url-encode team)
+         sprint (codec/url-encode sprint) 
+         days (take-while #(time/before? % end)
+                          (filter (complement weekend?)
+                                  (inc-date-stream begin)))]
+     (pmap (partial f team sprint) days))))
 
 (defn- singular
   "Get the value from a collection of one map with only one key"
@@ -158,9 +160,15 @@
 (defn cumulative
   "Gets a table of the cumulative flow (story points by status per day)"
   [team sprint]
-  (let [results (for-sprint team sprint cumulative-on)
-        ; TODO: apply order sort
-        statuses (keys (apply merge results))
+  (let [span (sprint-span (codec/url-encode sprint))
+        begin (time/plus (span "BeginDate") (time/days 1))
+        end (span "EndDate")
+        results (for-sprint team sprint begin end cumulative-on)
+        statuses (reverse (names "StoryStatus" end))
+        statuses (concat statuses
+                         (clojure.set/difference
+                           (set (keys (apply merge results)))
+                           (set statuses)))
         status-points (fn [m] (map #(get m % 0) statuses))]
     (cons (cons "Day" statuses)
           (map cons (iterate inc 1)
