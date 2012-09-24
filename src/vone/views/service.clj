@@ -118,5 +118,5 @@
 (defpage "/json/projections" []
   (with-401 json projections))
 (defpage "/ds/projections" {:keys [tqx]}
-  (with-401 (partial datasource tqx projections)))
+  (with-401 (partial datasource tqx) projections))
 

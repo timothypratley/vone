@@ -85,30 +85,20 @@ angular.module('charts', [])
 		projections: {
 			visualization: "Table",
 			title: "Projections",
-            height: null
+            height: 1000
 		}
 	})
-// TODO: not every chart needs a sprint and team! make a new directive?
 	.directive('chart', function(options, $log) {
 	    return function(scope, elem, attrs) {
 	        var chart, query, o = {};
 	    	$.extend(o, options.general);
 	    	$.extend(o, options[attrs.chart]);
 	        elem[0].innerHTML = "Loading " + o.title + "...";
-	        
-	    	// TODO: might be nicer to call the static drawchart method...
-	    	// except it uses containerid...
-	    	// https://developers.google.com/chart/interactive/docs/reference#google.visualization.drawchart
-	        // or ChartWrapper
-	        // https://developers.google.com/chart/interactive/docs/reference#chartwrapperobject	    };
-
 	        chart = new google.visualization[o.visualization](elem[0]);
-
 	    	query = function() {
 	    		if (!scope.team || !scope.sprint) {
 	    			return;
 	    		}
-	    			
 	    		var url = '/ds/' + attrs.chart + '/' + scope.team + '/' + scope.sprint;
 	    		$log.info("Quering " + url);
 	        	// TODO: how come 404 isn't handled by response...
@@ -123,8 +113,29 @@ angular.module('charts', [])
 	                    }
 	                });
 	        }
-
             // TODO: don't really want to watch
             scope.$watch("sprint", query, true);
 	    };
-	});
+	})
+	.directive('projections', function(options, $log) {
+	    return function(scope, elem, attrs) {
+	        var chart, query, o = {}, url = '/ds/projections';
+	    	$.extend(o, options.general);
+	    	$.extend(o, options.projections);
+	        elem[0].innerHTML = "Loading " + o.title + "...";
+	        chart = new google.visualization[o.visualization](elem[0]);
+            $log.info("Quering " + url);
+            // TODO: how come 404 isn't handled by response...
+            new google.visualization.Query(url)
+                .send(function (response) {
+                    if (response.isError()) {
+                        google.visualization.errors
+                            .addErrorFromQueryResponse(
+                                elem[0], response);
+                    } else {
+                        chart.draw(response.getDataTable(), o);
+                    }
+                });
+        };
+    });
+

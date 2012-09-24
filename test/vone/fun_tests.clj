@@ -5,7 +5,7 @@
 
 (deftest test-nil-json
          (is (not= nil (response/json {:foo nil}))))
-
+(comment
 (deftest test-to
   (is (= (take-to "TC1211" ["TC1210" "TC1211" "TC1212"])
          ["TC1210" "TC1211"])))
@@ -17,3 +17,4 @@
 (deftest test-before
   (is (= (take-before "TC1211" ["TC1210" "TC1211" "TC1212"])
          ["TC1210"])))
+)

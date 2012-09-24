@@ -1,5 +1,6 @@
 (ns vone.helpers
-   (:require [clj-time.format :as format]))
+   (:require [clj-time.format :as format]
+             [clj-time.core :as time]))
 
 (defn transpose
   [in]
@@ -47,7 +48,10 @@
 
 (defn readable-date
   [date]
-  (format/unparse (format/formatter "MMM dd") date))
+  (format/unparse (if (= (time/year date) (time/year (time/now)))
+                    (format/formatter "MMM dd")
+                    (format/formatter "yyyy MMM dd"))
+                    date))
 
 (defn basic-date
   [date]

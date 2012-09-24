@@ -1,5 +1,6 @@
 (ns vone.models.queries
   (:use [vone.models.version-one-request]
+        [clojure.pprint]
         [vone.helpers])
   (:require [ring.util.codec :as codec]
             [clj-time.core :as time]))
@@ -196,6 +197,7 @@
   (if-let [next (first (take-after sprint (sprints team)))]
     (customers team next)))
 
+;TODO: query team instead, don't get people not in the team
 (defn- participants-all
   [team sprint]
   (let [fields ["Owners.Name"]
@@ -244,11 +246,15 @@
                                 team (first stats))))])
       stats)))
 
+(defn- two-dec
+  [d]
+  (/ (Math/round (* 100.0 d)) 100.0))
+
 (defn- ratio
   [a b]
   (if (zero? b)
     0
-    (/ (Math/round (* 100.0 (/ a b))) 100.0)))
+    (two-dec (/ a b))))
 
 (defn- with-ratios
   [estimates]
@@ -326,14 +332,46 @@
   ;TODO: don't really need a separate function for this
   [(sort (participants-all team sprint)) (sort (participants-all team sprint))])
 
+(defn- nest [data criteria]
+  (if (empty? criteria)
+    data
+    (into {} (for [[k v] (group-by #(nth % (first criteria)) data)]
+      (hash-map k (nest v (rest criteria)))))))
+
+(defn- group
+  [m k v]
+  (update-in m [k] (fnil conj []) v))
+
+(defn projections-transform
+  [m]
+  (let [header (sort (set (map #(nth % 2) m)))
+        sum-by (fn [m row]
+                 (map-add m (vec (take 3 row)) (last row)))
+        result (reduce sum-by {} m)
+        result (map #(conj (first %) (two-dec (second %))) result)
+        nested (nest result [0 1 2])]
+    ; it is actually smaller to send down the full matrix,
+    ; as the sparse matrix dates take up a lot of text
+    (cons (apply vector "Customer" "Team" header)
+      (apply concat
+        (for [[customer teams] nested]
+          (for [[team dates] teams]
+            (apply vector customer team
+                   (map (comp (fnil last [0]) last dates) header))))))))
+
 (defn projections
   "Get the projected work"
   []
-  (let [fields ["Estimate" "Parent.Name" "Team.Name" "Timebox.EndDate"]
+  (let [fields ["Parent.Name" "Team.Name" "Timebox.EndDate" "Estimate"]
+        horizon (time/months 4)
+        now (time/now)
         query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
-                   "&where=Estimate;Team.Name;Timebox.EndDate")
-        result (request-flat query fields)]
-    (group-by #(nth % 2) result)))
+                   "&where=Estimate;Team.Name"
+                   ";Timebox.EndDate<'" (tostr-date (time/plus now horizon))
+                   "';Timebox.EndDate>'" (tostr-date (time/minus now horizon))
+                   \')
+        result (request-flat query fields "None")]
+    (projections-transform result)))
 
 (defn feedback
   "Get the feedback for a retrospective"

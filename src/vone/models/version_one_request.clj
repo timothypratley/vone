@@ -11,18 +11,18 @@
 
 (defn collapse
   "Converts xml into a more condensed structure"
-  [x]
+  [x not-found]
   (cond
     (and (vector? x) (string? (first x))) (first x)
-    (vector? x) (let [s (map collapse x)]
+    (vector? x) (let [s (map #(collapse % not-found) x)]
                   (if (vector? (first s))   ;key-value pairs
                     (into {} s)
                     s))
-    (map? x) (let [c (collapse (:content x))]
+    (map? x) (let [c (collapse (:content x) not-found)]
                (if-let [n (-> x :attrs :name)]
                  [n (if c
                       (or (parse-double c) (parse-date c) c)
-                      0)]
+                      not-found)]
                  c))
     :else x))
 
@@ -40,27 +40,29 @@
 
 (defn xml-collapse
   "Converts XML into a map"
-  [x]
+  [x not-found]
   (try
     (-> (java.io.ByteArrayInputStream. (.getBytes x "UTF8"))
       xml/parse
-      collapse)
+      (collapse not-found))
     (catch Exception e
       (println x)
       (throw e))))
 
 ;public
 (defn request-transform
-  [query transform]
-  (let [result (-> (xhr query)
-                 :body
-                 xml-collapse)]
-    ;TODO: use a safety call pattern instead
-	  (try
-	    (transform result)
-	    (catch Exception e
-	      (println "transform failed:" result)
-          (throw e)))))
+  ([query transform]
+   (request-transform query transform 0))
+  ([query transform not-found]
+   (let [result (-> (xhr query)
+                  :body
+                  (xml-collapse not-found))]
+     ;TODO: use a safety call pattern instead
+	   (try
+	     (transform result)
+	     (catch Exception e
+	       (println "transform failed:" result)
+           (throw e))))))
 
 (defn unmap
   [fields m]
@@ -74,14 +76,15 @@
   "Makes an xml http request, collapses it,
    and replaces key:value entities with the value
    for each of the fields in the order supplied"
-  [query fields]
-  (try
-	  (->> (xhr query)
-	    :body
-	    xml-collapse
-	    (unmap fields))
-    (catch Exception e
-      ;TODO: treat 401 as an expected failure, no need to log
-      (println query)
-      (println fields)
-      (throw e))))
+  ([query fields]
+   (request-flat query fields 0))
+  ([query fields not-found]
+   (try
+     (unmap fields
+            (xml-collapse (:body (xhr query)) not-found))
+     (catch Exception e
+       ;TODO: treat 401 as an expected failure, no need to log
+       (println query)
+       (println fields)
+       (throw e)))))
+

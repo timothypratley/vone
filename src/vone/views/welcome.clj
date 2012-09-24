@@ -155,5 +155,5 @@
 (defpage "/projections" []
   (html
     [:h1 "Projections"]
-    [:div {:chart "projections"}]))
+    [:div {:projections true}]))
 
