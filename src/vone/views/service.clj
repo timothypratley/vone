@@ -1,5 +1,6 @@
 (ns vone.views.service
-  (:require [cheshire.custom :as custom])
+  (:require [cheshire.custom :as custom]
+            [noir.session :as session])
   (:use [vone.models.queries]
         [vone.helpers]
         [clojure.data.csv :only [write-csv]]
@@ -63,16 +64,18 @@
 (defn with-401
   "Catch and respond on 401 exception"
   [service method & args]
-  (try+
-     (service (apply method args))
-     ;TODO: wish there was a nicer way to pass on 401
-     (catch [:status 401] []
-       (status 401 "Please login"))
-     (catch Exception e
-       (if (= "java.io.IOException: Authentication failure"
-              (.getMessage e))
-         (status 401 "Please login")
-         (throw e)))))
+  (if-not (session/get :username)
+    (status 401 "Please login")
+    (try+
+       (service (apply method args))
+       ;TODO: wish there was a nicer way to pass on 401
+       (catch [:status 401] []
+         (status 401 "Please login"))
+       (catch Exception e
+         (if (= "java.io.IOException: Authentication failure"
+                (.getMessage e))
+           (status 401 "Please login")
+           (throw e))))))
 
 (defmacro tss
   "Team Sprint Service

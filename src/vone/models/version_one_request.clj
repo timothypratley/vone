@@ -35,7 +35,7 @@
     (try
       (client/get url params)
       (catch Exception e
-        (println "xhr failed:" url)
+        (println "xhr failed (" (session/get :username) \: e \) url)
         (throw e)))))
 
 (defn xml-collapse

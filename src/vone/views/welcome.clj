@@ -60,7 +60,7 @@
       ]
      
      [:div#content.ng-view "Loading..."]
-     (include-js "/js/jquery-1.8.0.min.js")
+     (include-js "/js/jquery-1.8.2.min.js")
      (include-js "https://www.google.com/jsapi")
      (include-js "/js/angular-1.0.1.min.js")
      (include-js "/js/angular-resource-1.0.1.min.js")

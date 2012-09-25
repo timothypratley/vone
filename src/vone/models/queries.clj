@@ -23,7 +23,6 @@
   (let [ query (str "/Hist/" asset
                    "?asof=" (tostr-date asof)
                    "&sel=Name&where=Description;AssetState!='Dead'&sort=Order")]
-    (println query)
     (map first (request-flat query ["Name"]))))
 
 (defn- setify
