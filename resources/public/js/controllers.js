@@ -5,7 +5,7 @@ function AboutCtrl() {
 function LoginCtrl($scope, $http, $log, authService, $rootScope) {
     $scope.submit = function () {
     	$log.info("called login");
-        $http.post("/login", null,
+        $http.post("login", null,
                 {params: {username: $scope.username, password: $scope.password}})
         .success(function (data, status) {
         	$log.info("Login Confirmed");
@@ -61,13 +61,13 @@ function RetroCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
             $scope.sprints = [];
         }
         if ($scope.sprint) {
-            $http.get("/json/sprint-span/" + $scope.sprint)
+            $http.get("json/sprint-span/" + $scope.sprint)
                 .success(function (data) {
                     $scope.sprintBegin = data.BeginDate;
                     $scope.sprintEnd = data.EndDate;
                 })
                 .error($log.error);
-            $http.get("/json/feedback/" + $scope.team + '/' + $scope.sprint)
+            $http.get("json/feedback/" + $scope.team + '/' + $scope.sprint)
                 .success(function (data) {
                     $scope.feedback = angular.fromJson(data);
                 })
@@ -84,12 +84,12 @@ function RetroCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
     }
     $scope.$watch('team', function(newValue) {
         if (newValue) {
-            $location.path('/retro/' + newValue);
+            $location.path('retro/' + newValue);
         }
     }, true);
     $scope.$watch('sprint', function(newValue) {
         if (newValue) {
-            $location.path('/retro/' + $scope.team + '/' + newValue);
+            $location.path('retro/' + $scope.team + '/' + newValue);
         }
     }, true);
 }

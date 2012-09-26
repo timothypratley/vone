@@ -7,6 +7,8 @@
 
 ;TODO: cache answers
 
+(def lt (codec/url-encode "<"))
+(def gt (codec/url-encode ">"))
 (defn- ff
   "format fields for a query string"
   [fields]
@@ -51,7 +53,7 @@
                               "';AssetState!='Dead'].Estimate.@Sum")
         fields ["Name" sum-story-points]
         query (str "/Data/Timebox?sel=" (ff fields)
-                   "&where=" sum-story-points ">'0'&sort=EndDate")]
+                   "&where=" sum-story-points gt "'0'&sort=EndDate")]
     (request-flat query fields)))
 
 (def not-pos? (complement pos?))
@@ -96,6 +98,8 @@
          days (take-while #(time/before? % end)
                           (filter (complement weekend?)
                                   (inc-date-stream begin)))]
+     ;google app engine does not allow pmap,
+     ;so use regular map when deploying there
      (pmap (partial f team sprint) days))))
 
 (defn- singular
@@ -232,7 +236,7 @@
                 sum-hour-actuals
                 capacity]
         query (str "/Data/Timebox?sel=" (ff fields)
-                   "&where=" sum-point-estimates ">'0'&sort=EndDate")]
+                   "&where=" sum-point-estimates gt "'0'&sort=EndDate")]
     (request-flat query fields)))
 
 (defn- with-capacity
@@ -366,8 +370,8 @@
         now (time/now)
         query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
                    "&where=Estimate;Team.Name"
-                   ";Timebox.EndDate<'" (tostr-date (time/plus now horizon))
-                   "';Timebox.EndDate>'" (tostr-date (time/minus now horizon))
+                   ";Timebox.EndDate" lt \' (tostr-date (time/plus now horizon))
+                   "';Timebox.EndDate" gt \' (tostr-date (time/minus now horizon))
                    \')
         result (request-flat query fields "None")]
     (projections-transform result)))

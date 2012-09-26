@@ -10,14 +10,11 @@
   (html5
     [:head
      [:title "vone"]
-     [:meta {:name "viewport"
-             :content "width=device-width"
-             :initial-scale "1.0"}]
      [:link {:rel "icon"
-             :href "/img/favicon.ico"
+             :href "img/favicon.ico"
              :type "image/x-icon"}]
      [:link {:rel "shortcut"
-             :href "/img/favicon.ico"
+             :href "img/favicon.ico"
              :type "image/x-icon"}]
      (include-css "/css/bootstrap.min.css")
      (include-css "/css/vone.css")]
@@ -26,17 +23,17 @@
      
 		 [:header.navbar
       [:div.navbar-inner
-       [:a.brand {:href "/"} [:strong "Vone"]]
+       [:a.brand {:href "#/"} [:strong "Vone"]]
        [:ul.nav
         [:li.divider-vertical]
-        [:li (link-to "/" "Home")]
+        [:li (link-to "/#/" "Home")]
         [:li.divider-vertical]
         [:li (link-to "/#/retro" "Retrospective")]
         [:li.divider-vertical]
         [:li (link-to "/#/projections" "Projections")]
         [:li.divider-vertical]]
        [:div.login.ng-cloak.pull-right {:ng-show "!username"}
-        (link-to "#/login" "Login")]
+        (link-to "/#/login" "Login")]
        [:div.logout.ng-cloak.pull-right {:ng-show "username"}
         [:span "{{username}}"]
         (submit-button {:ng-click "logout()"} "logout")]]]
@@ -74,8 +71,8 @@
   (html
     [:form {:ng-submit "submit()"
            :novalidate true} 
-          [:div (label "username" "Username") (text-field "username")]
-          [:div (label "password" "Password") (password-field "password")]
+          [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
+          [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
           (submit-button "VersionOne Login")]))
 
 (defpage [:post "/login"] {:keys [username password]}

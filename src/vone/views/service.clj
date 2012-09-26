@@ -20,7 +20,7 @@
                 (custom/generate-string content)))
 
 (defn csv
-  [content filename]
+  [filename content]
   (assoc-in 
     (content-type "text/csv"
       (str (doto (java.io.StringWriter.) (write-csv content))))
@@ -84,16 +84,18 @@
   `(do
      (defpage ~(str "/json/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint")]}
-              (with-401 json ~(symbol query)
+              (with-401 json
+                        ~(symbol query)
                         ~(symbol "team") ~(symbol "sprint")))
      (defpage ~(str "/csv/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint")]}
-              (with-401 csv ~(symbol query)
-                        ~(symbol "team") ~(symbol "sprint")
-                        (str ~query \_ ~(symbol "team") \_ ~(symbol "sprint"))))
+              (with-401 (partial csv (str ~query \_ ~(symbol "team") \_ ~(symbol "sprint")))
+                        ~(symbol query)
+                        ~(symbol "team") ~(symbol "sprint")))
      (defpage ~(str "/ds/" query "/:team/:sprint")
               {:keys [~(symbol "team") ~(symbol "sprint") ~(symbol "tqx")]}
-              (with-401 (partial datasource ~(symbol "tqx")) ~(symbol query)
+              (with-401 (partial datasource ~(symbol "tqx"))
+                        ~(symbol query)
                         ~(symbol "team") ~(symbol "sprint")))))
 
 ;TODO: figure these out with reflection over team sprint queries public functions
@@ -112,6 +114,7 @@
 (tss "participants")
 (tss "feedback")
 
+;TODO: expose csv versions
 (defpage "/json/team-sprints" []
   (with-401 json team-sprints))
 

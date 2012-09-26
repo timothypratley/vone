@@ -2,24 +2,24 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
     .config(function ($routeProvider, $httpProvider) {
         $routeProvider
             .when("/about",
-                {templateUrl: "/about", controller: AboutCtrl})
+                {templateUrl: "about", controller: AboutCtrl})
             .when("/login",
-                {templateUrl: "/login", controller: LoginCtrl})
+                {templateUrl: "login", controller: LoginCtrl})
             .when("/logout",
-                {templateUrl: "/logout"})
+                {templateUrl: "logout"})
             .when("/retro",
-                {templateUrl: "/selectRetro", controller: RetroCtrl})
+                {templateUrl: "selectRetro", controller: RetroCtrl})
             .when("/retro/:team",
-                {templateUrl: "/selectRetro", controller: RetroCtrl})
+                {templateUrl: "selectRetro", controller: RetroCtrl})
             .when("/retro/:team/:sprint",
-                {templateUrl: "/retro", controller: RetroCtrl})
+                {templateUrl: "retro", controller: RetroCtrl})
             .when("/projections",
-                {templateUrl: "/projections", controller: ProjectionsCtrl})
+                {templateUrl: "projections", controller: ProjectionsCtrl})
             .otherwise({redirectTo: "/about"});
     })
     .directive('authenticate', function($rootScope, $http, $log) {
         $rootScope.logout = function() {
-            $http.get("/logout")
+            $http.get("logout")
                 .success(function () {
                     $rootScope.username = null;
                 })
@@ -37,14 +37,14 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
     	};
     })
     .run(function ($http, $rootScope, $log) {
-        $http.get("/ping")
+        $http.get("ping")
             .success(function (data) {
                 $rootScope.username = angular.fromJson(data);
             })
             .error($log.error);
         // TODO: not sure this belongs here,
         // but I want to avoid calling it everytime retro is visited
-        $http.get("/json/team-sprints")
+        $http.get("json/team-sprints")
             .success(function (data, status) {
                 $log.info("Got team sprints");
                 $log.info(data);

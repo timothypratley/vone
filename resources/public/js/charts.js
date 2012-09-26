@@ -99,7 +99,7 @@ angular.module('charts', [])
 	    		if (!scope.team || !scope.sprint) {
 	    			return;
 	    		}
-	    		var url = '/ds/' + attrs.chart + '/' + scope.team + '/' + scope.sprint;
+	    		var url = 'ds/' + attrs.chart + '/' + scope.team + '/' + scope.sprint;
 	    		$log.info("Quering " + url);
 	        	// TODO: how come 404 isn't handled by response...
 	            new google.visualization.Query(url)
@@ -119,7 +119,7 @@ angular.module('charts', [])
 	})
 	.directive('projections', function(options, $log) {
 	    return function(scope, elem, attrs) {
-	        var chart, query, o = {}, url = '/ds/projections';
+	        var chart, query, o = {}, url = 'ds/projections';
 	    	$.extend(o, options.general);
 	    	$.extend(o, options.projections);
 	        elem[0].innerHTML = "Loading " + o.title + "...";

@@ -1,9 +1,10 @@
 (ns vone.server
-  (:require [noir.server :as server]))
+  (:require [noir.server :as server]
+            [vone.views.welcome]
+            [vone.views.service]))
 
-(server/load-views "src/vone/views/")
-
-(def handler (server/gen-handler {:ns 'vone}))
+(def handler (server/gen-handler {:ns 'vone
+                                  :base-url "/vone"}))
 
 (defn -main [& m]
   (let [mode (keyword (or (first m) :dev))
