@@ -6,6 +6,16 @@
             [clj-time.core :as time]))
 
 ;TODO: cache answers
+;
+(defn- two-dec
+  [d]
+  (/ (Math/round (* 100.0 d)) 100.0))
+
+(defn- ratio
+  [a b]
+  (if (zero? b)
+    0
+    (two-dec (/ a b))))
 
 (def lt (codec/url-encode "<"))
 (def gt (codec/url-encode ">"))
@@ -212,6 +222,43 @@
                   ; rather than number?
     (set (remove number? (flatten (request-flat query fields))))))
 
+(defn- map-add-estimates
+  [m estimate-owners]
+  (let [estimate (first estimate-owners)
+        owners (second estimate-owners)]
+    (reduce #(map-add %1 %2 estimate) m owners)))
+
+(defn- map-add-hours
+  [m owner-hours]
+  (let [owner (first owner-hours)
+        hours (second owner-hours)]
+    (map-add m owner hours)))
+
+;TODO: query team instead, don't get people not in the team
+(defn participants
+  [team sprint]
+  (let [fields ["Estimate" "Owners.Name"]
+        query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
+                   "&where=Timebox.Name='" (codec/url-encode sprint)
+                   "';Team.Name='" (codec/url-encode team)
+                   "';AssetState!='Dead'")
+        points (reduce map-add-estimates {} (request-flat query fields))
+        fields ["Member.Name" "Value"]
+        query (str "/Data/Actual?sel=" (ff fields)
+                   "&where=Timebox.Name='" (codec/url-encode sprint)
+                   "';Team.Name='" (codec/url-encode team) "'")
+        hours (reduce map-add-hours {} (request-flat query fields))]
+    (cons ["Member" "Points" "Hours"]
+          (for [x (apply sorted-set (concat (keys points) (keys hours)))]
+            [x (points x) (two-dec (hours x))]))))
+
+
+(defn- participants-old
+  "Get the participants in a sprint"
+  [team sprint]
+  ;TODO: don't really need a separate function for this
+  [(sort (participants-all team sprint)) (sort (participants-all team sprint))])
+
 
 ; TODO: limit query to a sprint
 (defn- estimates-all
@@ -248,16 +295,6 @@
               [(* 5 14 (count (participants-all
                                 team (first stats))))])
       stats)))
-
-(defn- two-dec
-  [d]
-  (/ (Math/round (* 100.0 d)) 100.0))
-
-(defn- ratio
-  [a b]
-  (if (zero? b)
-    0
-    (two-dec (/ a b))))
 
 (defn- with-ratios
   [estimates]
@@ -300,7 +337,7 @@
                          "?sel=" (ff fields)
                          "&where=Timebox.Name='" (codec/url-encode sprint)
                          "';Team.Name='" (codec/url-encode team)
-                         "';AssetState!='Dead'&sort=Name")]
+                         "';-SplitTo;AssetState!='Dead'&sort=Name")]
           (request-flat query fields))))
 
 (defn stories
@@ -328,12 +365,6 @@
                          "';Team.Name='" (codec/url-encode team)
                          "';SplitTo;AssetState!='Dead'&sort=Name")]
           (request-flat query fields))))
-
-(defn participants
-  "Get the participants in a sprint"
-  [team sprint]
-  ;TODO: don't really need a separate function for this
-  [(sort (participants-all team sprint)) (sort (participants-all team sprint))])
 
 (defn- nest [data criteria]
   (if (empty? criteria)
