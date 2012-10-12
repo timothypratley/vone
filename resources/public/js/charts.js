@@ -117,25 +117,74 @@ angular.module('charts', [])
             scope.$watch("sprint", query, true);
 	    };
 	})
-	.directive('projections', function(options, $log) {
+	.directive('projections', function(options, $log, $http) {
 	    return function(scope, elem, attrs) {
-	        var chart, query, o = {}, url = 'ds/projections';
+	        var update, chart, query, o = {}, rnd;
+            rnd = function(x) {
+                return Math.round(100*x)/100;
+            };
 	    	$.extend(o, options.general);
 	    	$.extend(o, options.projections);
 	        elem[0].innerHTML = "Loading " + o.title + "...";
 	        chart = new google.visualization[o.visualization](elem[0]);
-            $log.info("Quering " + url);
-            // TODO: how come 404 isn't handled by response...
-            new google.visualization.Query(url)
-                .send(function (response) {
-                    if (response.isError()) {
-                        google.visualization.errors
-                            .addErrorFromQueryResponse(
-                                elem[0], response);
-                    } else {
-                        chart.draw(response.getDataTable(), o);
+            update = function() {
+                var ii, k, v, jj, header, m = {};
+                if (scope.projections) {
+                    header = scope.projections[0].slice(3);
+                    for (ii=1; ii<scope.projections.length; ii++) {
+                        keys = scope.projections[ii].slice(0, 3);
+                        if (!scope.showTeam) {
+                            keys.splice(2, 1);
+                        }
+                        if (!scope.showCustomer) {
+                            keys.splice(1, 1);
+                        }
+                        if (!scope.showProject) {
+                            keys.splice(0, 1);
+                        }
+                        if (keys.length === 0) {
+                            keys.push("Total");
+                        }
+                        k = JSON.stringify(keys);
+                        v = scope.projections[ii].slice(3);
+                        if (!m[k]) {
+                            m[k] = v;
+                        } else {
+                            for (jj=0; jj<v.length; jj++) {
+                                m[k][jj] += v[jj];
+                            }
+                        }
                     }
-                });
+                    pivot = [];
+                    if (scope.showTeam) {
+                        header.unshift("Team");
+                    }
+                    if (scope.showCustomer) {
+                        header.unshift("Customer");
+                    }
+                    if (scope.showProject) {
+                        header.unshift("Project");
+                    }
+                    if (!scope.showProject && !scope.showCustomer && !scope.showTeam) {
+                        header.unshift("Total");
+                    }
+                    pivot.push(header);
+                    // TODO: sort, or set column sort on chart
+                    for (k in m) {
+                        pivot.push(JSON.parse(k).concat($.map(m[k], rnd)));
+                    }
+                    chart.draw(google.visualization.arrayToDataTable(pivot), o);
+                }
+            };
+            scope.$watch('projections', update);
+            scope.$watch('showProject', update);
+            scope.$watch('showCustomer', update);
+            scope.$watch('showTeam', update);
+            $http.get("json/projections")
+                .success(function (data) {
+                    scope.projections = data;
+                })
+                .error($log.error);
         };
     });
 

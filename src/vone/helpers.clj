@@ -50,7 +50,7 @@
   [date]
   (format/unparse (if (= (time/year date) (time/year (time/now)))
                     (format/formatter "MMM dd")
-                    (format/formatter "yyyy MMM dd"))
+                    (format/formatter "MMM dd yyyy"))
                     date))
 
 (defn basic-date

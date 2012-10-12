@@ -250,15 +250,7 @@
         hours (reduce map-add-hours {} (request-flat query fields))]
     (cons ["Member" "Points" "Hours"]
           (for [x (apply sorted-set (concat (keys points) (keys hours)))]
-            [x (points x) (two-dec (hours x))]))))
-
-
-(defn- participants-old
-  "Get the participants in a sprint"
-  [team sprint]
-  ;TODO: don't really need a separate function for this
-  [(sort (participants-all team sprint)) (sort (participants-all team sprint))])
-
+            [x (get points x 0) (two-dec (get hours x 0))]))))
 
 ; TODO: limit query to a sprint
 (defn- estimates-all
@@ -378,25 +370,27 @@
 
 (defn projections-transform
   [m]
-  (let [header (sort (set (map #(nth % 2) m)))
+  (let [header (sort (set (map #(nth % 3) m)))
         sum-by (fn [m row]
-                 (map-add m (vec (take 3 row)) (last row)))
+                 (map-add m (vec (take 4 row)) (last row)))
         result (reduce sum-by {} m)
         result (map #(conj (first %) (two-dec (second %))) result)
-        nested (nest result [0 1 2])]
+        projects (nest result [0 1 2 3])]
     ; it is actually smaller to send down the full matrix,
     ; as the sparse matrix dates take up a lot of text
-    (cons (apply vector "Customer" "Team" header)
+    (cons (apply vector "Project" "Customer" "Team" header)
       (apply concat
-        (for [[customer teams] nested]
-          (for [[team dates] teams]
-            (apply vector customer team
-                   (map (comp (fnil last [0]) last dates) header))))))))
+        (for [[project customers] projects]
+          (apply concat
+            (for [[customer teams] customers]
+              (for [[team dates] teams]
+                (apply vector project customer team
+                       (map (comp (fnil last [0]) last dates) header))))))))))
 
 (defn projections
   "Get the projected work"
   []
-  (let [fields ["Parent.Name" "Team.Name" "Timebox.EndDate" "Estimate"]
+  (let [fields ["Scope.Name" "Parent.Name" "Team.Name" "Timebox.EndDate" "Estimate"]
         horizon (time/months 4)
         now (time/now)
         query (str "/Data/PrimaryWorkitem?sel=" (ff fields)

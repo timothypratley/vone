@@ -147,10 +147,13 @@
      ;[:div "Epics"]
      [:div {:chart "customersNext"}]
      ;TODO: why does this have to be unsafe?
-     [:div {:ng-bind-html-unsafe "feedback"}]]))
+     [:div.break {:ng-bind-html-unsafe "feedback"}]]))
 
 (defpage "/projections" []
   (html
     [:h1 "Projections"]
+    [:label.checkbox (check-box {:ng-model "showProject"} "project") "Project"]
+    [:label.checkbox (check-box {:ng-model "showCustomer"} "customer") "Customer"]
+    [:label.checkbox (check-box {:ng-model "showTeam"} "team") "Team"]
     [:div {:projections true}]))
 
