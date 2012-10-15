@@ -121,6 +121,8 @@
 (defpage "/json/sprint-span/:sprint" {:keys [sprint]}
   (with-401 json sprint-span sprint))
 
+(defpage "/csv/projections" []
+  (with-401 (partial csv "projections.csv") projections))
 (defpage "/json/projections" []
   (with-401 json projections))
 (defpage "/ds/projections" {:keys [tqx]}

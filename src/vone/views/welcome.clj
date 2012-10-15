@@ -9,6 +9,7 @@
 (defpage "/" []
   (html5
     [:head
+     [:meta {:http-equiv "X-UA-Compatible" :content "IE=edge,chrome=1"}]
      [:title "vone"]
      [:link {:rel "icon"
              :href "img/favicon.ico"
@@ -155,5 +156,6 @@
     [:label.checkbox (check-box {:ng-model "showProject"} "project") "Project"]
     [:label.checkbox (check-box {:ng-model "showCustomer"} "customer") "Customer"]
     [:label.checkbox (check-box {:ng-model "showTeam"} "team") "Team"]
+    (link-to "/csv/projections" "csv")
     [:div {:projections true}]))
 
