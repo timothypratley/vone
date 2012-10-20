@@ -226,7 +226,10 @@
   [m estimate-owners]
   (let [estimate (first estimate-owners)
         owners (second estimate-owners)]
-    (reduce #(map-add %1 %2 estimate) m owners)))
+    ; TODO: nil is replaced by 0 when there are no owners
+    (if (not (number? owners))
+      (reduce #(map-add %1 %2 estimate) m owners)
+      m)))
 
 (defn- map-add-hours
   [m owner-hours]
@@ -249,8 +252,32 @@
                    "';Team.Name='" (codec/url-encode team) "'")
         hours (reduce map-add-hours {} (request-flat query fields))]
     (cons ["Member" "Points" "Hours"]
-          (for [x (apply sorted-set (concat (keys points) (keys hours)))]
-            [x (get points x 0) (two-dec (get hours x 0))]))))
+          (for [member (apply sorted-set (concat (keys points) (keys hours)))]
+            [member (get points member 0) (two-dec (get hours member 0))]))))
+
+(defn- map-add-sprint
+  [m estimate-owners]
+  (let [estimate (first estimate-owners)
+        owners (second estimate-owners)
+        sprint (last estimate-owners)]
+    ; TODO: nil is replaced by 0 when there are no owners
+    (if-not (or (number? owners) (number? sprint))
+      (reduce #(update-in %1 [%2 sprint] (fnil + 0) estimate)
+              m owners)
+      m)))
+
+(defn participation
+  []
+  (let [fields ["Estimate" "Owners.Name" "Timebox.Name"]
+        query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
+                   ";AssetState!='Dead'")
+        points (reduce map-add-sprint {} (request-flat query fields))]
+    (cons ["Member" "Sprint" "Points"]
+          (apply concat
+            (for [member (apply sorted-set (keys points))]
+              (let [sprints (points member)]
+                (for [sprint (apply sorted-set (keys sprints))]
+                  [member sprint (get sprints sprint 0)])))))))
 
 ; TODO: limit query to a sprint
 (defn- estimates-all
@@ -368,7 +395,7 @@
   [m k v]
   (update-in m [k] (fnil conj []) v))
 
-(defn projections-transform
+(defn roadmap-transform
   [m]
   (let [header (sort (set (map #(nth % 3) m)))
         sum-by (fn [m row]
@@ -387,7 +414,7 @@
                 (apply vector project customer team
                        (map (comp (fnil last [0]) last dates) header))))))))))
 
-(defn projections
+(defn roadmap
   "Get the projected work"
   []
   (let [fields ["Scope.Name" "Parent.Name" "Team.Name" "Timebox.EndDate" "Estimate"]
@@ -399,7 +426,7 @@
                    "';Timebox.EndDate" gt \' (tostr-date (time/minus now horizon))
                    \')
         result (request-flat query fields "None")]
-    (projections-transform result)))
+    (roadmap-transform result)))
 
 (defn feedback
   "Get the feedback for a retrospective"

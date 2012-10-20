@@ -13,8 +13,8 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
                 {templateUrl: "selectRetro", controller: RetroCtrl})
             .when("/retro/:team/:sprint",
                 {templateUrl: "retro", controller: RetroCtrl})
-            .when("/projections",
-                {templateUrl: "projections", controller: ProjectionsCtrl})
+            .when("/roadmap",
+                {templateUrl: "roadmap", controller: RoadmapCtrl})
             .otherwise({redirectTo: "/about"});
     })
     .directive('authenticate', function($rootScope, $http, $log) {

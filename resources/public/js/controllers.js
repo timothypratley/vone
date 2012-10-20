@@ -94,7 +94,7 @@ function RetroCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
     }, true);
 }
 
-function ProjectionsCtrl($scope, $http, $log) {
+function RoadmapCtrl($scope, $http, $log) {
 
 }
 

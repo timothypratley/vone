@@ -82,9 +82,9 @@ angular.module('charts', [])
 			visualization: "PieChart",
 			title: "Customer Focus Next Sprint"
 		},
-		projections: {
+		roadmap: {
 			visualization: "Table",
-			title: "Projections",
+			title: "Roadmap",
             height: 1000
 		}
 	})
@@ -117,22 +117,22 @@ angular.module('charts', [])
             scope.$watch("sprint", query, true);
 	    };
 	})
-	.directive('projections', function(options, $log, $http) {
+	.directive('roadmap', function(options, $log, $http) {
 	    return function(scope, elem, attrs) {
 	        var update, chart, query, o = {}, rnd;
             rnd = function(x) {
                 return Math.round(100*x)/100;
             };
 	    	$.extend(o, options.general);
-	    	$.extend(o, options.projections);
+	    	$.extend(o, options.roadmap);
 	        elem[0].innerHTML = "Loading " + o.title + "...";
 	        chart = new google.visualization[o.visualization](elem[0]);
             update = function() {
                 var ii, k, v, jj, header, m = {};
-                if (scope.projections) {
-                    header = scope.projections[0].slice(3);
-                    for (ii=1; ii<scope.projections.length; ii++) {
-                        keys = scope.projections[ii].slice(0, 3);
+                if (scope.roadmap) {
+                    header = scope.roadmap[0].slice(3);
+                    for (ii=1; ii<scope.roadmap.length; ii++) {
+                        keys = scope.roadmap[ii].slice(0, 3);
                         if (!scope.showTeam) {
                             keys.splice(2, 1);
                         }
@@ -146,7 +146,7 @@ angular.module('charts', [])
                             keys.push("Total");
                         }
                         k = JSON.stringify(keys);
-                        v = scope.projections[ii].slice(3);
+                        v = scope.roadmap[ii].slice(3);
                         if (!m[k]) {
                             m[k] = v;
                         } else {
@@ -176,13 +176,13 @@ angular.module('charts', [])
                     chart.draw(google.visualization.arrayToDataTable(pivot), o);
                 }
             };
-            scope.$watch('projections', update);
+            scope.$watch('roadmap', update);
             scope.$watch('showProject', update);
             scope.$watch('showCustomer', update);
             scope.$watch('showTeam', update);
-            $http.get("json/projections")
+            $http.get("json/roadmap")
                 .success(function (data) {
-                    scope.projections = data;
+                    scope.roadmap = data;
                 })
                 .error($log.error);
         };

@@ -121,10 +121,17 @@
 (defpage "/json/sprint-span/:sprint" {:keys [sprint]}
   (with-401 json sprint-span sprint))
 
-(defpage "/csv/projections" []
-  (with-401 (partial csv "projections.csv") projections))
-(defpage "/json/projections" []
-  (with-401 json projections))
-(defpage "/ds/projections" {:keys [tqx]}
-  (with-401 (partial datasource tqx) projections))
+(defpage "/csv/roadmap" []
+  (with-401 (partial csv "roadmap") roadmap))
+(defpage "/json/roadmap" []
+  (with-401 json roadmap))
+(defpage "/ds/roadmap" {:keys [tqx]}
+  (with-401 (partial datasource tqx) roadmap))
+
+(defpage "/csv/participation" []
+  (with-401 (partial csv "participation") participation))
+(defpage "/json/participation" []
+  (with-401 json participation))
+(defpage "/ds/participation" {:keys [tqx]}
+  (with-401 (partial datasource tqx) participation))
 

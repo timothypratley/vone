@@ -30,8 +30,8 @@
   "XmlHttpRequest from VersionOne"
   [query]
   (let [url (str base-url query)
-        params {:basic-auth [(session/get :username)
-                             (session/get :password)]}]
+        params {:basic-auth [(or (session/get :username) "none")
+                             (or (session/get :password) "none")]}]
     (try
       (client/get url params)
       (catch Exception e

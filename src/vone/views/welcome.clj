@@ -31,7 +31,7 @@
         [:li.divider-vertical]
         [:li (link-to "/#/retro" "Retrospective")]
         [:li.divider-vertical]
-        [:li (link-to "/#/projections" "Projections")]
+        [:li (link-to "/#/roadmap" "Roadmap")]
         [:li.divider-vertical]]
        [:div.login.ng-cloak.pull-right {:ng-show "!username"}
         (link-to "/#/login" "Login")]
@@ -150,12 +150,12 @@
      ;TODO: why does this have to be unsafe?
      [:div.break {:ng-bind-html-unsafe "feedback"}]]))
 
-(defpage "/projections" []
+(defpage "/roadmap" []
   (html
-    [:h1 "Projections"]
+    [:h1 "Roadmap"]
     [:label.checkbox (check-box {:ng-model "showProject"} "project") "Project"]
     [:label.checkbox (check-box {:ng-model "showCustomer"} "customer") "Customer"]
     [:label.checkbox (check-box {:ng-model "showTeam"} "team") "Team"]
-    (link-to "/csv/projections" "csv")
-    [:div {:projections true}]))
+    (link-to "/csv/roadmap" "csv")
+    [:div {:roadmap true}]))
 
