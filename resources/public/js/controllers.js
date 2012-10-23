@@ -98,3 +98,7 @@ function RoadmapCtrl($scope, $http, $log) {
 
 }
 
+function FabelCtrl($scope, $http, $log) {
+
+}
+

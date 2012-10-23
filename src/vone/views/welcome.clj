@@ -32,6 +32,8 @@
         [:li (link-to "/#/retro" "Retrospective")]
         [:li.divider-vertical]
         [:li (link-to "/#/roadmap" "Roadmap")]
+        [:li.divider-vertical]
+        [:li (link-to "/#/fabel" "Fabel")]
         [:li.divider-vertical]]
        [:div.login.ng-cloak.pull-right {:ng-show "!username"}
         (link-to "/#/login" "Login")]
@@ -158,4 +160,10 @@
     [:label.checkbox (check-box {:ng-model "showTeam"} "team") "Team"]
     (link-to "/csv/roadmap" "csv")
     [:div {:roadmap true}]))
+
+(defpage "/fabel" []
+  (html
+    [:h1 "Fabel"]
+    (link-to "/csv/fabel" "csv")
+    [:div {:fabel true}]))
 

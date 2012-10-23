@@ -270,7 +270,7 @@
   []
   (let [fields ["Estimate" "Owners.Name" "Timebox.Name"]
         query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
-                   ";AssetState!='Dead'")
+                   "&where=AssetState!='Dead'")
         points (reduce map-add-sprint {} (request-flat query fields))]
     (cons ["Member" "Sprint" "Points"]
           (apply concat
@@ -278,6 +278,58 @@
               (let [sprints (points member)]
                 (for [sprint (apply sorted-set (keys sprints))]
                   [member sprint (get sprints sprint 0)])))))))
+
+(defn- check-estimate
+  [story]
+  (let [e (story "Estimate")
+        valid-estimate #{0.5 1.0 2.0 3.0 5.0 8.0}]
+    (when-not (valid-estimate e)
+      (str "Estimate " e " should be one of " (sort valid-estimate)))))
+
+(defn- check-success-criteria
+  [story]
+  (let [d (story "Description")]
+    (when-not (re-find #"(?i)success criteria" d)
+      "Description must have success criteria")))
+
+(defn- check-description-length
+  [story]
+  (let [d (story "Description")]
+    (when (> 20 (.length d))
+      "Description too short")))
+
+(defn- check-owners
+  [story]
+  (let [o (story "Owners.Name")
+        ;TODO: the evil nil
+        o (if (number? o) [] o)]
+    (when-not (= 2 (count o))
+      (apply str "Should have 2 owners but has " (count o) " " o))))
+
+(defn- check-story
+  [story]
+  (remove nil?
+          (map #(%1 story)
+               [check-estimate
+                check-success-criteria
+                check-description-length
+                check-owners])))
+
+;https://www3.v1host.com/Tideworks/story.mvc/Summary?oidToken=Story%3A
+;+id
+(defn fabel
+  []
+  (let [fields ["Number" "Name" "Estimate" "Team.Name"
+                "Owners.Name" "Description"
+                "Parent.Name"]
+        query (str "/Data/Story?sel=" (ff fields)
+                   "&where=Timebox.State.Code='ACTV'"
+                   ";AssetState!='Dead'")
+        result (request-transform query identity)]
+    (for [s result
+          :let [errors (check-story s)]
+          :when errors]
+      [(s "Team.Name") (s "Number") (apply vector errors)])))
 
 ; TODO: limit query to a sprint
 (defn- estimates-all

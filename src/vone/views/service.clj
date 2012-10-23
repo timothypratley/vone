@@ -128,6 +128,13 @@
 (defpage "/ds/roadmap" {:keys [tqx]}
   (with-401 (partial datasource tqx) roadmap))
 
+(defpage "/csv/fabel" []
+  (with-401 (partial csv "fabel") fabel))
+(defpage "/json/fabel" []
+  (with-401 json fabel))
+(defpage "/ds/fabel" {:keys [tqx]}
+  (with-401 (partial datasource tqx) fabel))
+
 (defpage "/csv/participation" []
   (with-401 (partial csv "participation") participation))
 (defpage "/json/participation" []
