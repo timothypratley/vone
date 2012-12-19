@@ -167,3 +167,10 @@
     (link-to "/csv/fabel" "csv")
     [:div {:fabel true}]))
 
+(defpage "/member" []
+  (html
+    [:h1 "Member"]
+    [:ul
+     [:li {:ng-repeat "member in members"}
+      [:a {:href "/#/member/{{member}}"} "{{member}}"]]]))
+

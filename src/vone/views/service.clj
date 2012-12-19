@@ -121,6 +121,9 @@
 (defpage "/json/sprint-span/:sprint" {:keys [sprint]}
   (with-401 json sprint-span sprint))
 
+(defpage "/json/members" []
+  (with-401 json sort (names "Member")))
+
 (defpage "/csv/roadmap" []
   (with-401 (partial csv "roadmap") roadmap))
 (defpage "/json/roadmap" []

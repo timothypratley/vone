@@ -102,3 +102,11 @@ function FabelCtrl($scope, $http, $log) {
 
 }
 
+function MemberCtrl($scope, $http, $log) {
+    $http.get('json/members')
+        .success(function (data) {
+            $scope.members = angular.fromJson(data);
+        })
+        .error($log);
+}
+

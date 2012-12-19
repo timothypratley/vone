@@ -29,13 +29,16 @@
   (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint "'")]
     (request-transform query first)))
 
-(defn- names
+(defn names
   "Retrieves a sorted seqence of asset names"
-  [asset asof]
-  (let [ query (str "/Hist/" asset
-                   "?asof=" (tostr-date asof)
-                   "&sel=Name&where=Description;AssetState!='Dead'&sort=Order")]
-    (map first (request-flat query ["Name"]))))
+  ([asset]
+   (let [query (str "/Data/" asset "?sel=Name")]
+     (map first (request-flat query ["Name"]))))
+  ([asset asof]
+   (let [query (str "/Hist/" asset
+                    "?asof=" (tostr-date asof)
+                    "&sel=Name&where=Description;AssetState!='Dead'&sort=Order")]
+     (map first (request-flat query ["Name"])))))
 
 (defn- setify
   "Creates sets from a collection entities (to remove duplicates)"
@@ -488,3 +491,7 @@
                    "';Timebox.Name='" (codec/url-encode sprint) "'")]
     (request-transform query singular)))
 
+(defn users
+  []
+
+  )
