@@ -403,16 +403,24 @@
                "Efficiency (Done/Capacity)"]
               estimates)))))
 
-(defn- workitems
-  [team sprint asset-type plural]
-  (cons [plural]
-        (let [fields ["Name"]
-              query (str "/Data/" asset-type
-                         "?sel=" (ff fields)
-                         "&where=Timebox.Name='" (codec/url-encode sprint)
-                         "';Team.Name='" (codec/url-encode team)
-                         "';-SplitTo;AssetState!='Dead'&sort=Name")]
-          (request-flat query fields))))
+(defn workitems
+  ([member asset-type plural]
+   (cons [plural]
+         (let [fields ["ChangeDate" "Name" "Estimate"]
+               query (str "/Data/" asset-type
+                          "?sel=" (ff fields)
+                          "&where=Owners[Name='" member
+                          "'].@Count!='0';AssetState='Closed'&sort=ChangeDate")]
+           (request-flat query fields))))
+  ([team sprint asset-type plural]
+   (cons [plural]
+         (let [fields ["Name"]
+               query (str "/Data/" asset-type
+                          "?sel=" (ff fields)
+                          "&where=Timebox.Name='" (codec/url-encode sprint)
+                          "';Team.Name='" (codec/url-encode team)
+                          "';-SplitTo;AssetState!='Dead'&sort=Name")]
+           (request-flat query fields)))))
 
 (defn stories
   "Gets a table of stories"
@@ -491,7 +499,3 @@
                    "';Timebox.Name='" (codec/url-encode sprint) "'")]
     (request-transform query singular)))
 
-(defn users
-  []
-
-  )

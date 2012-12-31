@@ -145,3 +145,6 @@
 (defpage "/ds/participation" {:keys [tqx]}
   (with-401 (partial datasource tqx) participation))
 
+(defpage "/json/workitems/:member" {:keys [member]}
+  (with-401 json workitems member "PrimaryWorkitem" "PrimaryWorkitems"))
+

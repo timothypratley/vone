@@ -86,7 +86,12 @@ angular.module('charts', [])
 			visualization: "Table",
 			title: "Roadmap",
             height: 1000
-		}
+		},
+        workitems: {
+            visualization: "Table",
+            title: "Workitems",
+            height: 1000
+        }
 	})
 	.directive('chart', function(options, $log) {
 	    return function(scope, elem, attrs) {
