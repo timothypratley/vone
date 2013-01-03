@@ -88,9 +88,8 @@ angular.module('charts', [])
             height: 1000
 		},
         workitems: {
-            visualization: "Table",
+            visualization: "LineChart",
             title: "Workitems",
-            height: 1000
         }
 	})
 	.directive('chart', function(options, $log) {
@@ -101,10 +100,10 @@ angular.module('charts', [])
 	        elem[0].innerHTML = "Loading " + o.title + "...";
 	        chart = new google.visualization[o.visualization](elem[0]);
 	    	query = function() {
-	    		if (!scope.team || !scope.sprint) {
+	    		if (!scope.args) {
 	    			return;
 	    		}
-	    		var url = 'ds/' + attrs.chart + '/' + scope.team + '/' + scope.sprint;
+	    		var url = 'ds/' + attrs.chart + '/' + scope.args;
 	    		$log.info("Quering " + url);
 	        	// TODO: how come 404 isn't handled by response...
 	            new google.visualization.Query(url)

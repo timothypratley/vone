@@ -31,7 +31,7 @@
 (defn parse-date
   [date]
   (try
-    (format/parse (format/formatter "yyyy-MM-dd") date)
+    (format/parse (format/formatter "yyyy-MM-dd") (.substring date 0 10))
     (catch Exception e
       nil)))
 
@@ -45,6 +45,10 @@
 (defn tostr-date
   [date]
   (format/unparse (format/formatter "yyyy-MM-dd'T23:59:59'") date))
+
+(defn tostr-ds-date
+  [date]
+  (str "Date" (format/unparse (format/formatter "(yyyy,MM,dd)") date)))
 
 (defn readable-date
   [date]

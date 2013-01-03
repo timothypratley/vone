@@ -60,7 +60,7 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
     });
 
 // manual bootstrap, when google api is loaded
-google.load('visualization', '1.0', {'packages':['corechart', 'table']});
+google.load('visualization', '1', {'packages':['corechart', 'table']});
 google.setOnLoadCallback(function() {
   angular.bootstrap(document.body, ['vone']);
 });

@@ -35,9 +35,11 @@
 
 (defn column-type
   [s]
-  (if (number? s)
-    "number"
-    "string"))
+  ;(println "S:" (type s) s)
+  (cond
+    (number? s) "number"
+    (instance? org.joda.time.DateTime s) "date"
+    :else "string"))
 
 (defn reqId
   [tqx]
@@ -46,13 +48,19 @@
       (parse-int (second match)))
     0))
 
+(defn make-value
+  [value]
+  (hash-map :v (if (instance? org.joda.time.DateTime value)
+                 (tostr-ds-date value)
+                 value)))
+
 (defn tabulate
   [content]
   {:cols (map #(hash-map :label %1 :type %2)
               (first content)
               (map column-type (second content)))
    :rows (map #(hash-map
-                 :c (map (partial hash-map :v) %))
+                 :c (map make-value %))
               (rest content))})
 
 (defn datasource
@@ -145,6 +153,10 @@
 (defpage "/ds/participation" {:keys [tqx]}
   (with-401 (partial datasource tqx) participation))
 
+(defpage "/csv/workitems/:member" {:keys [member]}
+  (with-401 (partial csv "workitems") workitems member "PrimaryWorkitem"))
 (defpage "/json/workitems/:member" {:keys [member]}
-  (with-401 json workitems member "PrimaryWorkitem" "PrimaryWorkitems"))
+  (with-401 json workitems member "PrimaryWorkitem"))
+(defpage "/ds/workitems/:member" {:keys [member tqx]}
+  (with-401 (partial datasource tqx) workitems member "PrimaryWorkitem"))
 

@@ -403,15 +403,40 @@
                "Efficiency (Done/Capacity)"]
               estimates)))))
 
+;from incanter
+(defn cumulative-sum
+  " Returns a sequence of cumulative sum for the given collection. For instance
+    The first value equals the first value of the argument, the second value is
+    the sum of the first two arguments, the third is the sum of the first three
+    arguments, etc.
+
+    Examples:
+      (use 'incanter.core)
+      (cumulative-sum (range 100))
+  "
+  ([coll]
+   (loop [in-coll (rest coll)
+          cumu-sum [(first coll)]
+          cumu-val (first coll)]
+     (if (empty? in-coll)
+       cumu-sum
+       (let [cv (+ cumu-val (first in-coll))]
+         (recur (rest in-coll) (conj cumu-sum cv) cv))))))
+
+(defn accumulate
+  [s]
+  (reduce #(assoc %1 (first %2) (second %2)) (sorted-map)
+         (map list (map first s) (cumulative-sum (map second s)))))
+
 (defn workitems
-  ([member asset-type plural]
-   (cons [plural]
-         (let [fields ["ChangeDate" "Name" "Estimate"]
-               query (str "/Data/" asset-type
-                          "?sel=" (ff fields)
-                          "&where=Owners[Name='" member
-                          "'].@Count!='0';AssetState='Closed'&sort=ChangeDate")]
-           (request-flat query fields))))
+  ([member asset-type]
+   (let [fields ["ChangeDate" "Estimate"]
+         query (str "/Data/" asset-type
+                    "?sel=" (ff fields)
+                    "&where=Owners[Name='" (codec/url-encode member)
+                    "'].@Count!='0';AssetState='Closed'&sort=ChangeDate")]
+     (cons fields
+           (accumulate (request-flat query fields)))))
   ([team sprint asset-type plural]
    (cons [plural]
          (let [fields ["Name"]
