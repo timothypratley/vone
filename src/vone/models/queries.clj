@@ -1,17 +1,18 @@
 (ns vone.models.queries
   (:use [vone.models.version-one-request]
         [clojure.pprint]
+        [clojure.set]
         [vone.helpers])
   (:require [ring.util.codec :as codec]
             [clj-time.core :as time]))
 
 ;TODO: cache answers
 ;
-(defn- two-dec
+(defn two-dec
   [d]
   (/ (Math/round (* 100.0 d)) 100.0))
 
-(defn- ratio
+(defn ratio
   [a b]
   (if (zero? b)
     0
@@ -543,4 +544,17 @@
                    "&where=Team.Name='" (codec/url-encode team)
                    "';Timebox.Name='" (codec/url-encode sprint) \')]
     (request-transform query singular)))
+
+(defn transform-members
+  [s]
+  (map #(clojure.set/rename-keys % {"DefaultRole.Name" :role
+                                    "DefaultRole.Order" :tier
+                                    "MemberLabels.Name" :team})
+       s))
+(defn members
+  []
+  (let [fields ["Name" "DefaultRole.Name" "DefaultRole.Order" "MemberLabels.Name"]
+        query (str "/Data/Member?sel=" (ff fields)
+                   ";AssetState!='Dead'")]
+    (request-transform query transform-members)))
 

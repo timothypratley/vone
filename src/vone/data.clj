@@ -1,4 +1,5 @@
 (ns vone.data
+  (:use [vone.models.queries])
   (:require [clojure.java.io :as io]))
 
 (defn read-clj
@@ -26,14 +27,13 @@
   (reverse (sort-by :score
     (map (fn [m]
            (let [member-name (first m)
-                 data (second m)
-                 points (:points data)
-                 role (@roles (:role data))
-                 total (+ (/ (or points 0) 20) (or (:tier role) 1))]
-             (println data)
-             {:name member-name
-              :score total
-              :role (:name role)
-              :points points}))
+                 data (second m)]
+             (-> data
+               (update-in [:points] (fnil two-dec 0))
+               (assoc :score 
+                      (two-dec
+                        (+ (/ (or (:points data) 0) 20)
+                           (- 10 (or (:tier data) 10)))))
+               (assoc :name member-name))))
          @rankings))))
 

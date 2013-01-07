@@ -185,5 +185,5 @@
     [:ul
      [:li {:ng-repeat "m in members"}
       [:a {:href "/#/member/{{m.name}}"} "{{m.name}}"]
-      "score:{{m.score}} points:{{m.points}} role:{{m.role}}"]]))
+      "score:{{m.score}} | points:{{m.points}} | role:{{m.role}} | teir:{{m.tier}} | team:{{m.team}}"]]))
 

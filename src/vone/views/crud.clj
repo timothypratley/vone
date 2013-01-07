@@ -17,6 +17,15 @@
 (defpage "/merge" []
          (html 
            (dosync 
+             ;TODO: refactor
+             (alter rankings
+                    (fn mm [orig]
+                      (reduce
+                        (fn reducer [m x]
+                          (let [n (get x "Name")]
+                            (update-in m [n] (partial merge x))))
+                        orig
+                    (members))))
              (alter rankings
                     (fn alterer [orig]
                       (reduce
