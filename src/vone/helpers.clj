@@ -47,8 +47,9 @@
   (format/unparse (format/formatter "yyyy-MM-dd'T23:59:59'") date))
 
 (defn tostr-ds-date
+  "converts a joda time into a javascript zero based month date"
   [date]
-  (str "Date" (format/unparse (format/formatter "(yyyy,MM,dd)") date)))
+  (str "Date(" (time/year date) "," (dec (time/month date)) "," (time/day date) ")"))
 
 (defn readable-date
   [date]

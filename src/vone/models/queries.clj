@@ -26,7 +26,7 @@
 
 (defn sprint-span
   [sprint]
-  (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint "'")]
+  (let [query (str "/Data/Timebox?sel=BeginDate,EndDate&where=Name='" sprint \')]
     (request-transform query first)))
 
 (defn names
@@ -252,7 +252,7 @@
         fields ["Member.Name" "Value"]
         query (str "/Data/Actual?sel=" (ff fields)
                    "&where=Timebox.Name='" (codec/url-encode sprint)
-                   "';Team.Name='" (codec/url-encode team) "'")
+                   "';Team.Name='" (codec/url-encode team) \')
         hours (reduce map-add-hours {} (request-flat query fields))]
     (cons ["Member" "Points" "Hours"]
           (for [member (apply sorted-set (concat (keys points) (keys hours)))]
@@ -429,12 +429,32 @@
          (map list (map first s) (cumulative-sum (map second s)))))
 
 (defn workitems
+  ([]
+   (let [fields ["Owners.Name" "Estimate"]
+         horizon (time/years 1)
+         now (time/now)
+         query (str "/Data/PrimaryWorkitem"
+                    "?sel=" (ff fields)
+                    "&where=Owners[AssetState!='Dead'].@Count"
+                    gt "'0';ChangeDate"
+                    gt \' (tostr-date (time/minus now horizon))
+                    "';AssetState='Closed'")
+         result (request-flat query fields)]
+     (map #(list (first %) (two-dec (second %)))
+          (reduce (fn [m owners-estimate]
+                    (let [names (first owners-estimate)
+                          estimate (second owners-estimate)]
+                      (reduce #(update-in %1 [%2] (fnil + 0) estimate) m names)))
+                  (sorted-map) result))))
   ([member asset-type]
    (let [fields ["ChangeDate" "Estimate"]
+         horizon (time/years 1)
+         now (time/now)
          query (str "/Data/" asset-type
                     "?sel=" (ff fields)
-                    "&where=Owners[Name='" (codec/url-encode member)
-                    "'].@Count!='0';AssetState='Closed'&sort=ChangeDate")]
+                    "&where=ChangeDate" gt \' (tostr-date (time/minus now horizon))
+                    "';Owners[Name='" (codec/url-encode member)
+                    "'].@Count" gt "'0';AssetState='Closed'&sort=ChangeDate")]
      (cons fields
            (accumulate (request-flat query fields)))))
   ([team sprint asset-type plural]
@@ -521,6 +541,6 @@
   [team sprint]
   (let [query (str "/Data/Retrospective?sel=Summary"
                    "&where=Team.Name='" (codec/url-encode team)
-                   "';Timebox.Name='" (codec/url-encode sprint) "'")]
+                   "';Timebox.Name='" (codec/url-encode sprint) \')]
     (request-transform query singular)))
 

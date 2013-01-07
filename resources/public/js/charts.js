@@ -90,6 +90,12 @@ angular.module('charts', [])
         workitems: {
             visualization: "LineChart",
             title: "Workitems",
+            vAxis: {
+                viewWindowMode: "explicit",
+                viewWindow: {min: 0, max: 300}},
+            hAxis: {
+                viewWindowMode: "explicit",
+                viewWindow: {min: new Date(2012,0,1), max: new Date(2013,0,1)}}
         }
 	})
 	.directive('chart', function(options, $log) {

@@ -172,10 +172,18 @@
     [:h1 "Members"]
     [:ul
      [:li {:ng-repeat "member in members"}
-      [:a {:href "/#/member/{{member}}"} "{{member}}"]]]))
+      [:a {:href "/#/member/{{member[0]}}"} "{{member[0]}} {{member[1]}}"]]]))
 
 (defpage "/member" []
   (html
     [:h1 "Member {{member}}"]
     [:div {:chart "workitems"}]))
+
+(defpage "/rankings" []
+  (html
+    [:h1 "Rankings"]
+    [:ul
+     [:li {:ng-repeat "m in members"}
+      [:a {:href "/#/member/{{m.name}}"} "{{m.name}}"]
+      "score:{{m.score}} points:{{m.points}} role:{{m.role}}"]]))
 

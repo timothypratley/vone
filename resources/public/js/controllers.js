@@ -117,3 +117,12 @@ function MemberCtrl($scope, $routeParams, $log) {
     $scope.args = $routeParams.member;
 }
 
+function RankingsCtrl($scope, $http, $log) {
+    $http.get('json/rankings')
+        .success(function (data) {
+            $scope.members = angular.fromJson(data);
+            $log.info($scope.members);
+        })
+        .error($log);
+}
+
