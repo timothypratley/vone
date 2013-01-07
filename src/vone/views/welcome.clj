@@ -176,6 +176,6 @@
 
 (defpage "/member" []
   (html
-    [:h1 "Member {{member}}"]
+    [:h1 "{{member}}"]
     [:div {:chart "workitems"}]))
 

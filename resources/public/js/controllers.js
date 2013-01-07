@@ -115,5 +115,6 @@ function MembersCtrl($scope, $http, $log) {
 
 function MemberCtrl($scope, $routeParams, $log) {
     $scope.args = $routeParams.member;
+    $scope.member = $routeParams.member
 }
 
