@@ -21,6 +21,8 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
                 {templateUrl: "members", controller: MembersCtrl})
             .when("/member/:member",
                 {templateUrl: "member", controller: MemberCtrl})
+            .when("/rankings",
+                {templateUrl: "rankings", controller: RankingsCtrl})
             .otherwise({redirectTo: "/about"});
     })
     .directive('authenticate', function($rootScope, $http, $log) {

@@ -1,6 +1,7 @@
 (ns vone.server
   (:require [noir.server :as server]
             [vone.views.welcome]
+            [vone.views.crud]
             [vone.views.service]))
 
 (def handler (server/gen-handler {:ns 'vone

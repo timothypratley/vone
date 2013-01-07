@@ -3,6 +3,7 @@
             [noir.session :as session])
   (:use [vone.models.queries]
         [vone.helpers]
+        [vone.data]
         [clojure.data.csv :only [write-csv]]
         [noir.core]
         [noir.response :only [redirect content-type status]]
@@ -130,7 +131,9 @@
   (with-401 json sprint-span sprint))
 
 (defpage "/json/members" []
-  (with-401 json sort (names "Member")))
+  (with-401 json workitems))
+;(defpage "/json/members" []
+;  (with-401 json sort (names "Member")))
 
 (defpage "/csv/roadmap" []
   (with-401 (partial csv "roadmap") roadmap))
@@ -159,4 +162,7 @@
   (with-401 json workitems member "PrimaryWorkitem"))
 (defpage "/ds/workitems/:member" {:keys [member tqx]}
   (with-401 (partial datasource tqx) workitems member "PrimaryWorkitem"))
+
+(defpage "/json/rankings" []
+  (with-401 json get-rankings))
 
