@@ -24,7 +24,7 @@
 
 (defn get-rankings
   []
-  (reverse (sort-by :score
+  (sort-by :name
     (map (fn [m]
            (let [member-name (first m)
                  data (second m)]
@@ -35,5 +35,5 @@
                         (+ (/ (or (:points data) 0) 20)
                            (- 10 (or (:tier data) 10)))))
                (assoc :name member-name))))
-         @rankings))))
+         @rankings)))
 
