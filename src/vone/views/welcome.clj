@@ -3,12 +3,15 @@
             [noir.response :as response])
   (:use [noir.core]
         [hiccup.core]
-        [hiccup.form-helpers]
-        [hiccup.page-helpers]))
+        [hiccup.form]
+        [hiccup.page]
+        [hiccup.element]))
 
 (defpage "/" []
   (html5
     [:head
+     ; When run on an intranet, IE defaults to compatibility
+     ; which does not work for Google Visualization library
      [:meta {:http-equiv "X-UA-Compatible" :content "IE=edge,chrome=1"}]
      [:title "vone"]
      [:link {:rel "icon"
@@ -19,10 +22,9 @@
              :type "image/x-icon"}]
      (include-css "/css/bootstrap.min.css")
      (include-css "/css/vone.css")]
-    
+
     [:body {:authenticate "loginbox"}
-     
-		 [:header.navbar
+     [:header.navbar
       [:div.navbar-inner
        [:a.brand {:href "#/"} [:strong "Vone"]]
        [:ul.nav
@@ -34,13 +36,15 @@
         [:li (link-to "/#/roadmap" "Roadmap")]
         [:li.divider-vertical]
         [:li (link-to "/#/fabel" "Fabel")]
+        [:li.divider-vertical]
+        [:li (link-to "/#/overall" "Overall")]
         [:li.divider-vertical]]
        [:div.login.ng-cloak.pull-right {:ng-show "!username"}
         (link-to "/#/login" "Login")]
        [:div.logout.ng-cloak.pull-right {:ng-show "username"}
         [:span "{{username}}"]
         (submit-button {:ng-click "logout()"} "logout")]]]
-   
+
      [:div#loginbox.modal.hide.fade {:tabindex -1
                                      :role "dialog"
                                      :aria-labelledby "Login"
@@ -54,11 +58,11 @@
                :ng-submit "submit()"
                :novalidate true}
         [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
-        [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]      
+        [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
         (submit-button "VersionOne Login")]]
       ;TODO: should have a modal-footer with submit, but then no form?
       ]
-     
+
      [:div#content.ng-view "Loading..."]
      (include-js "/js/jquery-1.8.2.min.js")
      (include-js "https://www.google.com/jsapi")
@@ -73,7 +77,7 @@
 (defpage "/login" []
   (html
     [:form {:ng-submit "submit()"
-           :novalidate true} 
+           :novalidate true}
           [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
           [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
           (submit-button "VersionOne Login")]))
@@ -166,6 +170,14 @@
     [:h1 "Fabel"]
     (link-to "/csv/fabel" "csv")
     [:div {:fabel true}]))
+
+(defpage "/overall" []
+  (html
+    [:h1 "Overall"]
+    (link-to "/csv/overall" "csv")
+    [:div {:allocation true}]
+    [:div {:churn true}]
+    [:div {:quality true}]))
 
 (defpage "/members" []
   (html

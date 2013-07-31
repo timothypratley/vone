@@ -85,18 +85,38 @@ angular.module('charts', [])
 		roadmap: {
 			visualization: "Table",
 			title: "Roadmap",
-            height: 1000
+      height: 1000
 		},
-        workitems: {
-            visualization: "LineChart",
-            title: "Workitems",
-            vAxis: {
-                viewWindowMode: "explicit",
-                viewWindow: {min: 0, max: 300}},
-            hAxis: {
-                viewWindowMode: "explicit",
-                viewWindow: {min: new Date(2012,0,1), max: new Date(2013,0,1)}}
-        }
+		fabel: {
+			visualization: "Table",
+			title: "Fabel",
+      height: 1000
+		},
+ 		allocation: {
+			visualization: "Table",
+			title: "Allocation",
+      height: 1000
+		},
+		churn: {
+			visualization: "Table",
+			title: "Churn",
+      height: 1000
+		},
+		quality: {
+			visualization: "Table",
+			title: "Quality",
+      height: 1000
+		},
+    workitems: {
+      visualization: "LineChart",
+      title: "Workitems",
+      vAxis: {
+        viewWindowMode: "explicit",
+        viewWindow: {min: 0, max: 300}},
+      hAxis: {
+        viewWindowMode: "explicit",
+        viewWindow: {min: new Date(2012,0,1), max: new Date(2013,0,1)}}
+    }
 	})
 	.directive('chart', function(options, $log) {
 	    return function(scope, elem, attrs) {

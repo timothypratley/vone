@@ -1,11 +1,12 @@
 (ns vone.models.version-one-request
   (:use [vone.helpers])
-  (:require [clj-http.client :as client]
+  (:require [clj-http.lite.client :as client]
             [clojure.xml :as xml]
             [ring.util.codec :as codec]
             [noir.session :as session]))
 
 ;TODO: use with-connection-pool from clj-http
+;TODO: use :query-params instead of constructing them manually
 
 (def base-url "http://www3.v1host.com/Tideworks/VersionOne/rest-1.v1")
 

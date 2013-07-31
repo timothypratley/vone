@@ -102,13 +102,13 @@
 (defn- for-sprint
   "Queries f for each sprint day"
   ([team sprint f]
-   (let [span (sprint-span (codec/url-encode sprint)) 
+   (let [span (sprint-span (codec/url-encode sprint))
          begin (time/plus (span "BeginDate") (time/days 1))
          end (span "EndDate")]
      (for-sprint team sprint begin end f)))
   ([team sprint begin end f]
    (let [team (codec/url-encode team)
-         sprint (codec/url-encode sprint) 
+         sprint (codec/url-encode sprint)
          days (take-while #(time/before? % end)
                           (filter (complement weekend?)
                                   (inc-date-stream begin)))]
@@ -512,8 +512,7 @@
         result (reduce sum-by {} m)
         result (map #(conj (first %) (two-dec (second %))) result)
         projects (nest result [0 1 2 3])]
-    ; it is actually smaller to send down the full matrix,
-    ; as the sparse matrix dates take up a lot of text
+    ; sparse matrix dates take up a lot of text, so send full matrix
     (cons (apply vector "Project" "Customer" "Team" header)
       (apply concat
         (for [[project customers] projects]
@@ -558,3 +557,23 @@
                    ";AssetState!='Dead'")]
     (request-transform query transform-members)))
 
+
+(defn allocation
+  [])
+
+
+;/Hist/PrimaryWorkitem?sel=Name,Status.Name,ChangeDate&where=Team.Name='TC+Sharks';Timebox.Name='TC1306';Status.Name&sort=ChangeDate
+(defn hist
+  [team sprint]
+  (let [query (str "/Hist/PrimaryWorkitem?sel="
+                   "&where=Timebox.Name='" (codec/url-encode sprint)
+                   "';Team.Name='" (codec/url-encode team)
+                   "';AssetState!='Dead'")
+        result (request-transform query identity)]
+    result))
+
+(defn churn
+  [])
+
+(defn quality
+  [])
