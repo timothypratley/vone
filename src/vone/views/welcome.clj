@@ -145,11 +145,13 @@
      [:div.break {:chart "velocity"}]
      [:div {:chart "estimates"}]
      [:div {:chart "failedReview"}]
+     [:div {:chart "churnComparison"}]
      [:div {:chart "participants"}]
      [:div.break {:chart "stories"}]
      [:div {:chart "defects"}]
      [:div {:chart "testSets"}]
      [:div {:chart "splits"}]
+     [:div {:chart "churnStories"}]
      [:div.break {:chart "customers"}]
      ;TODO:
      ;[:div "Epics"]

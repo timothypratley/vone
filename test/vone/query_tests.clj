@@ -17,12 +17,13 @@
            ;(println
              ;(xhr "http://invalid.com/url")))))
 
-(deftest test-projections-transform
-  (testing "projection transforms work"
+(deftest test-roadmap-transform
+  (testing "roadmap transforms work"
            (println
-             (projections-transform
+             (roadmap-transform
                [["CSX" "TC" 1 1]
                 ["CSX" "TC" 1 2]
                 ["CSX" "SP" 1 3]
                 ["CSX" "SP" 1 4]]))))
+
 

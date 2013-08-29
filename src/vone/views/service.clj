@@ -3,7 +3,6 @@
             [noir.session :as session])
   (:use [vone.models.queries]
         [vone.helpers]
-        [vone.data]
         [clojure.data.csv :only [write-csv]]
         [noir.core]
         [noir.response :only [redirect content-type status]]
@@ -115,12 +114,14 @@
 (tss "velocity")
 (tss "estimates")
 (tss "failedReview")
+(tss "churnComparison")
 (tss "customers")
 (tss "customersNext")
 (tss "stories")
 (tss "defects")
 (tss "testSets")
 (tss "splits")
+(tss "churnStories")
 (tss "participants")
 (tss "feedback")
 
@@ -163,8 +164,5 @@
   (with-401 json workitems member "PrimaryWorkitem"))
 (defpage "/ds/workitems/:member" {:keys [member tqx]}
   (with-401 (partial datasource tqx) workitems member "PrimaryWorkitem"))
-
-(defpage "/json/rankings" []
-  (with-401 json get-rankings))
 
 

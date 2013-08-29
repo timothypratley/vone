@@ -340,6 +340,8 @@
   [team]
   (let [t (str "[Team.Name='" (codec/url-encode team) "';AssetState!='Dead']")
         sum-point-estimates (str "Workitems:PrimaryWorkitem" t ".Estimate.@Sum")
+        tt (str "[Reference!='';Team.Name='" (codec/url-encode team) "';AssetState!='Dead']")
+        sum-changeorders (str "Workitems:PrimaryWorkitem" tt ".Estimate.@Sum")
         count-stories (str "Workitems:Story" t ".@Count")
         count-defects (str "Workitems:Defect" t ".@Count")
         count-test-sets (str "Workitems:TestSet" t ".@Count")
@@ -350,6 +352,7 @@
         capacity (str "Capacities" t ".Value.@Sum")
         fields ["Name"
                 sum-point-estimates
+                sum-changeorders
                 count-stories
                 count-defects
                 count-test-sets
@@ -378,8 +381,11 @@
           done (nth stats 7)
           capacity (nth stats 8)
           accuracy (ratio estimation done)
-          efficiency (ratio done capacity)]
-      (concat stats [accuracy efficiency]))))
+          efficiency (ratio done capacity)
+          points (nth stats 1)
+          referenced (nth stats 2)
+          rr (ratio referenced points)]
+      (concat stats [accuracy efficiency rr]))))
 
 (defn estimates
   "Gets a table of estimates and statistics"
@@ -393,6 +399,7 @@
       (transpose
         (cons ["Sprint"
                "Points"
+               "Referenced"
                "Stories"
                "Defects"
                "Test Sets"
@@ -401,7 +408,8 @@
                "Done"
                "Capacity"
                "Accuracy (Estimate/Done)"
-               "Efficiency (Done/Capacity)"]
+               "Efficiency (Done/Capacity)"
+               "Referenced ratio"]
               estimates)))))
 
 ;from incanter
@@ -564,7 +572,7 @@
 (defn compress
   [xs]
   (reduce #(if (= (last %1) %2) %1 (conj %1 %2)) [] xs))
-;(compress [:a :a :b :c :a :c :c :c])
+;(is (= (compress [:a :a :b :c :a :c :c :c]) [:a :b :c :a :c]))
 
 (defn count-failed
   [s]
@@ -593,20 +601,67 @@
           (take-last 5
                      (take c sprints)))))
 
+(defn count-added-after-start
+  [s]
+  (->> s
+       compress
+       (filter #(= "Failed Review" (get % "Status.Name")))
+       (group-by #(get % "Timebox.Name"))
+       (map (fn [[k v]]
+              [k (count v)]))
+       sort))
+
+
+(defn- story-set-on
+  [team sprint date]
+  (let [query (str "/Hist/PrimaryWorkitem?sel=Number&asof=" (tostr-date date)
+                   "&where=Timebox.Name='" sprint
+                   "';Team.Name='" team
+                   "';AssetState!='Dead'")]
+    (set (request-flat query ["Number"]))))
+
+(defn churn-data
+  "Gets a table of the cumulative flow (story points by status per day)"
+  [team sprint]
+  (let [span (sprint-span (codec/url-encode sprint))
+        begin (time/plus (span "BeginDate") (time/days 1))
+        end (span "EndDate")]
+    (for-sprint team sprint begin end story-set-on)))
+
+(defn added [s]
+  (map clojure.set/difference (rest s) s))
+
+(defn removed [s]
+  (map clojure.set/difference s (rest s)))
+
+(defn churnStories
+  [team sprint]
+  (let [results (churn-data team sprint)
+        collect #(reduce clojure.set/union (% results))
+        a (collect added)
+        r (collect removed)]
+    [["Action" "Stories"]
+     ["Added" a]
+     ["Removed" r]]))
+
 (defn churn
-  [])
+  [team sprint]
+  (let [results (churn-data team sprint)
+        sum #(reduce + (map count (% results)))
+        a (sum added)
+        r (sum removed)]
+    [sprint a r]))
+
+(defn churnComparison
+  "Gets a table of the past 4 sprints' churn"
+  [team sprint]
+  (let [s (->> (sprints team)
+            (take-to sprint)
+            (take-last 5))]
+    (cons ["Sprint" "Added" "Removed"]
+          (map #(churn team %) s))))
+
 
 (defn quality
   [])
-
-
-
-
-
-
-
-
-
-
-
 
