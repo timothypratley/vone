@@ -22,7 +22,7 @@
     (map? x) (let [c (collapse (:content x) not-found)]
                (if-let [n (-> x :attrs :name)]
                  [n (if c
-                      (or (parse-double c) (parse-date c) c)
+                      (or (parse-double c) (parse-date c) (parse-date-full c) c)
                       not-found)]
                  c))
     :else x))
@@ -62,6 +62,7 @@
 	   (try
 	     (transform result)
 	     (catch Exception e
+         (println query)
 	       (println "transform failed:" result)
            (throw e))))))
 
@@ -88,4 +89,9 @@
        (println query)
        (println fields)
        (throw e)))))
+
+
+
+
+
 

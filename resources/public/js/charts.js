@@ -45,6 +45,12 @@ angular.module('charts', [])
 			title: "Estimates",
             height: null
 		},
+		failedReview: {
+			visualization: "ColumnChart",
+		    title: "Failed Review events per Sprint",
+		    vAxis: {title: "Count", minValue: 0},
+		    hAxis: {title: "Sprint"}
+		},
 		participants: {
 			visualization: "Table",
 			title: "Participants",
@@ -217,4 +223,5 @@ angular.module('charts', [])
                 .error($log.error);
         };
     });
+
 

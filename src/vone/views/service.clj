@@ -22,7 +22,7 @@
 
 (defn csv
   [filename content]
-  (assoc-in 
+  (assoc-in
     (content-type "text/csv"
       (str (doto (java.io.StringWriter.) (write-csv content))))
     [:headers "Content-Disposition"]
@@ -114,6 +114,7 @@
 (tss "cumulativePrevious")
 (tss "velocity")
 (tss "estimates")
+(tss "failedReview")
 (tss "customers")
 (tss "customersNext")
 (tss "stories")
@@ -165,4 +166,5 @@
 
 (defpage "/json/rankings" []
   (with-401 json get-rankings))
+
 

@@ -561,19 +561,52 @@
 (defn allocation
   [])
 
+(defn compress
+  [xs]
+  (reduce #(if (= (last %1) %2) %1 (conj %1 %2)) [] xs))
+;(compress [:a :a :b :c :a :c :c :c])
 
-;/Hist/PrimaryWorkitem?sel=Name,Status.Name,ChangeDate&where=Team.Name='TC+Sharks';Timebox.Name='TC1306';Status.Name&sort=ChangeDate
-(defn hist
-  [team sprint]
-  (let [query (str "/Hist/PrimaryWorkitem?sel="
-                   "&where=Timebox.Name='" (codec/url-encode sprint)
-                   "';Team.Name='" (codec/url-encode team)
-                   "';AssetState!='Dead'")
-        result (request-transform query identity)]
+(defn count-failed
+  [s]
+  (->> s
+       compress
+       (filter #(= "Failed Review" (get % "Status.Name")))
+       (group-by #(get % "Timebox.Name"))
+       (map (fn [[k v]]
+              [k (count v)]))
+       sort))
+
+;/Hist/PrimaryWorkitem?sel=Name,Status.Name,ChangeDate&where=Team.Name='TC+Sharks';Timebox.Name='TC1311';Status.Name&sort=Name,ChangeDate
+(defn failed-review-all
+  [team]
+  (let [query (str "/Hist/PrimaryWorkitem?sel=Timebox.Name,Number,Status.Name&Sort=Timebox.Name,Number,ChangeDate"
+                   "&where=Team.Name='" (codec/url-encode team)
+                   "';AssetState!='Dead';Timebox.Name;Status.Name")
+        result (request-transform query count-failed)]
     result))
+
+(defn failedReview
+  [team sprint]
+  (let [sprints (failed-review-all team)
+        c (count-to sprint (map first sprints))]
+    (cons ["Sprint" "Failed Review"]
+          (take-last 5
+                     (take c sprints)))))
 
 (defn churn
   [])
 
 (defn quality
   [])
+
+
+
+
+
+
+
+
+
+
+
+

@@ -144,6 +144,7 @@
      [:div {:chart "cumulativePrevious"}]
      [:div.break {:chart "velocity"}]
      [:div {:chart "estimates"}]
+     [:div {:chart "failedReview"}]
      [:div {:chart "participants"}]
      [:div.break {:chart "stories"}]
      [:div {:chart "defects"}]
@@ -198,4 +199,5 @@
      [:li {:ng-repeat "m in members"}
       [:a {:href "/#/member/{{m.name}}"} "{{m.name}}"]
       "score:{{m.score}} | points:{{m.points}} | role:{{m.role}} | teir:{{m.tier}} | team:{{m.team}}"]]))
+
 
