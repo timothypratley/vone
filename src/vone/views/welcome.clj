@@ -202,4 +202,6 @@
       [:a {:href "/#/member/{{m.name}}"} "{{m.name}}"]
       "score:{{m.score}} | points:{{m.points}} | role:{{m.role}} | teir:{{m.tier}} | team:{{m.team}}"]]))
 
+(defpage "" []
+  (response/redirect "/vone/"))
 
