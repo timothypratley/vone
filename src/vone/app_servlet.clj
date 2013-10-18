@@ -1,18 +1,17 @@
-(ns vone.app_servlet
+(ns vone.app-servlet
   (:gen-class :extends javax.servlet.http.HttpServlet)
   (:use [appengine-magic.servlet :only [make-servlet-service-method]]
         [appengine-magic.multipart-params :only [wrap-multipart-params]])
   (:require [appengine-magic.core :as gae]
-            [noir.util.gae :as noir-gae]
-            [noir.server.handler :as handler]
-            [vone.middleware.httpsession :as httpsession]))
+            [vone.middleware.httpsession :as httpsession]
+            ;; load views (must manually load all routes)
+            [vone.views.welcome]
+            [vone.views.service]))
 
 ;; custom middlewares
 (handler/add-custom-middleware wrap-multipart-params)
+(handler/add-custom-middleware wrap-strip-trailing-slash)
 
-;; load views (must manually load all routes)
-(require 'vone.views.welcome)
-(require 'vone.views.service)
 
 ;; def the ring handler with httpsession
 ;; must also enable sessions in appengine-web.xml
@@ -28,3 +27,5 @@
 (defn -service [this request response]
   ((make-servlet-service-method vone-site) this request response))
 
+
+
