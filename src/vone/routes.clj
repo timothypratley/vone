@@ -6,9 +6,88 @@
             [compojure.handler :as handler]
             [vone.views.pages]
             [vone.models.queries]
-            [noir.util.middleware :as nm]))
+            [noir.util.middleware :as nm]
+            [clojure.data.csv :refer [write-csv]]
+            [cheshire.custom :as custom]))
 
-(defn- doc-str [m]
+(custom/add-encoder org.joda.time.DateTime
+  (fn [d jsonGenerator]
+    (.writeString jsonGenerator (readable-date d))))
+
+(defn json
+  "Wraps the response in the json content type
+   and generates JSON from the content"
+  [content]
+  (content-type "application/json; charset=utf-8"
+                (custom/generate-string content)))
+
+(defn csv
+  [filename content]
+  (assoc-in
+    (content-type "text/csv"
+      (str (doto (java.io.StringWriter.) (write-csv content))))
+    [:headers "Content-Disposition"]
+    (str "attachment;filename=" filename ".csv")))
+
+(defn parse-int
+  [s]
+  (if s
+    (Integer/parseInt s)
+    0))
+
+(defn column-type
+  [s]
+  ;(println "S:" (type s) s)
+  (cond
+    (number? s) "number"
+    (instance? org.joda.time.DateTime s) "date"
+    :else "string"))
+
+(defn reqId
+  [tqx]
+  (if tqx
+    (let [match (re-find #"reqId:(\d+)" tqx)]
+      (parse-int (second match)))
+    0))
+
+(defn make-value
+  [value]
+  (hash-map :v (if (instance? org.joda.time.DateTime value)
+                 (tostr-ds-date value)
+                 value)))
+
+(defn tabulate
+  [content]
+  {:cols (map #(hash-map :label %1 :type %2)
+              (first content)
+              (map column-type (second content)))
+   :rows (map #(hash-map
+                 :c (map make-value %))
+              (rest content))})
+
+(defn datasource
+  "Google charts datasource"
+  [tqx content]
+  (json {:reqId (reqId tqx)
+         :table (tabulate content)}))
+
+(defn with-401
+  "Catch and respond on 401 exception"
+  [service method & args]
+  (if-not (session/get :username)
+    (status 401 "Please login")
+    (try+
+       (service (apply method args))
+       ;TODO: wish there was a nicer way to pass on 401
+       (catch [:status 401] []
+         (status 401 "Please login"))
+       (catch Exception e
+         (if (= "java.io.IOException: Authentication failure"
+                (.getMessage e))
+           (status 401 "Please login")
+           (throw e))))))
+
+(defn doc-str [m]
   (str (when-let [ns (:ns m)] (str (ns-name ns) "/")) (:name m) \newline
        (:arglists m) \newline
        (:doc m) \newline))
@@ -52,25 +131,20 @@
         (str error \newline (doc-str (meta f)))
         (apply f parse-vals)))))
 
-(defn json [x] x)
-(defn ds [x] x)
-(defn csv [x] x)
+(defn page-routes
+  "Returns routes for pages defined in a namespace as public functions with no arguments"
+  [page-ns]
+  (for [[page-name page] (ns-publics page-ns)]
+    (GET (str "/" page-name) request (page))))
 
-(let [pages (for [[page-name page] (ns-publics 'vone.views.pages)]
-              (GET (str "/" page-name) request
-                   (page)))
-      services (for [[service-name service] (ns-publics 'vone.models.queries)
-                     fmt [json ds csv]]
-                 (POST (str "/" fmt "/" service-name) request
-                       (fmt (call service request))))]
-  (def app-routes
-    (apply routes
-           (concat
-            pages
-            services
-            [(route/resources "/")
-             (GET "" [] (response/redirect "/vone/"))
-             (route/not-found "Not Found")]))))
+(defn service-routes
+  "Returns routes for services defined in a namespace as public functions.
+  Services have their arguments checked and return helpful error messages."
+  [service-ns]
+  (let [ds datasource]
+    (for [[service-name service] (ns-publics service-ns)
+          fmt [json ds csv]]
+      (POST (str "/" fmt "/" service-name) request
+            (fmt (call service request))))))
 
-(def app
-  (handler/site app-routes))
+

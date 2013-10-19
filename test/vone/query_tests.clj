@@ -1,7 +1,7 @@
 (ns vone.query-tests
   (:require [noir.response :as response])
   (:use [vone.models.queries]
-        [vone.views.service]
+        [vone.routes]
         [clojure.test]))
 
 (deftest test-cumulative
@@ -27,3 +27,4 @@
                 ["CSX" "SP" 1 4]]))))
 
 
+
