@@ -142,7 +142,7 @@ angular.module('charts', [])
       if (!scope.args) {
         return;
       }
-      var url = 'ds/' + attrs.chart + '/' + scope.args;
+      var url = 'datasource/' + attrs.chart + '/' + scope.args;
       $log.info("Quering " + url);
       // TODO: how come 404 isn't handled by response...
       new google.visualization.Query(url)
@@ -232,3 +232,4 @@ angular.module('charts', [])
 });
 
 
+

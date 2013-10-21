@@ -131,3 +131,4 @@ function RankingsCtrl($scope, $http, $log) {
         .error($log);
 }
 
+
