@@ -102,13 +102,13 @@
 (defn- for-sprint
   "Queries f for each sprint day"
   ([team sprint f]
-   (let [span (sprint-span (codec/url-encode sprint)) 
+   (let [span (sprint-span (codec/url-encode sprint))
          begin (time/plus (span "BeginDate") (time/days 1))
          end (span "EndDate")]
      (for-sprint team sprint begin end f)))
   ([team sprint begin end f]
    (let [team (codec/url-encode team)
-         sprint (codec/url-encode sprint) 
+         sprint (codec/url-encode sprint)
          days (take-while #(time/before? % end)
                           (filter (complement weekend?)
                                   (inc-date-stream begin)))]
@@ -558,3 +558,14 @@
                    ";AssetState!='Dead'")]
     (request-transform query transform-members)))
 
+(defn transform-effort
+  [s]
+  (map #(clojure.set/rename-keys % {"Value" :hours}) s))
+(defn effort
+  []
+  (let [fields ["Name" "Value"]
+        query (str "/Data/Actual?sel=" (ff fields)
+                   ";AssetState!='Dead'")]
+    (request-transform query transform-effort)))
+
+

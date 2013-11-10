@@ -34,5 +34,13 @@
                                 points (second wi)]
                             (assoc-in m [member :points] points)))
                         orig
-                        (workitems)))))))
+                        (workitems))))
+             (alter rankings
+                    (fn [orig]
+                      (reduce
+                        (fn [m x]
+                          ;TODO
+                          ))
+                      orig
+                      (hours))))))
 
