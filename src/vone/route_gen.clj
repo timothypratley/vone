@@ -8,6 +8,7 @@
             [cheshire.custom :as custom]
             [slingshot.slingshot :refer [try+]]))
 
+
 (custom/add-encoder org.joda.time.DateTime
   (fn [d jsonGenerator]
     (.writeString jsonGenerator (readable-date d))))
@@ -161,4 +162,6 @@
       (println route)
       (GET route request
            (call service request fmt)))))
+
+
 

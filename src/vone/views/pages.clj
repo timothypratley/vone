@@ -36,6 +36,10 @@
        [:li.divider-vertical]
        [:li (link-to "/#/fabel" "Fabel")]
        [:li.divider-vertical]
+       [:li (link-to "/#/allteams" "All Teams")]
+       [:li.divider-vertical]
+       [:li (link-to "/#/projectdefectrate" "Project Defect Rate")]
+       [:li.divider-vertical]
        [:li (link-to "/#/overall" "Overall")]
        [:li.divider-vertical]]
       [:div.login.ng-cloak.pull-right {:ng-show "!username"}
@@ -64,6 +68,7 @@
     [:div#content.ng-view "Loading..."]
     (include-js "/js/jquery-1.8.2.min.js")
     (include-js "https://www.google.com/jsapi")
+    (include-js "http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js")
     (include-js "/js/angular-1.0.1.min.js")
     (include-js "/js/angular-resource-1.0.1.min.js")
     (include-js "/js/http-auth-interceptor.js")
@@ -157,6 +162,17 @@
     ;TODO: why does this have to be unsafe?
     [:div.break {:ng-bind-html-unsafe "feedback"}]]))
 
+(defn allteams []
+  (html
+   [:h1 "All Teams Status: {{today}}"]
+   [:div.report
+    [:ul
+     [:li {:ng-repeat "args in argss"}
+      [:h2 "{{args}}"]
+      [:div {:chart "burndown" :width 600 :height 300 :style "float:left;"}]
+      [:div {:chart "cumulative" :width 600 :height 300 :style "margin-left:610px;"}]
+      [:div {:chart "churnStories"}]]]]))
+
 (defn roadmap []
   (html
    [:h1 "Roadmap"]
@@ -199,5 +215,22 @@
     [:li {:ng-repeat "m in members"}
      [:a {:href "/#/member/{{m.name}}"} "{{m.name}}"]
      "score:{{m.score}} | points:{{m.points}} | role:{{m.role}} | teir:{{m.tier}} | team:{{m.team}}"]]))
+
+;TODO
+#_(def select-project
+  [:div
+   [:select {:ng-model "project"
+             :ng-options "key as key for (key, value) in projects"}
+    [:option {:value ""} "-- choose project --"]]])
+
+(defn projectdefectrate []
+  (html
+   [:h1 "Defect Rate: {{project}}"]
+   [:div.report
+    [:ul
+     [:li {:ng-repeat "args in argss"}
+      [:h2 "{{args}}"]
+      [:div {:chart "defectRate"}]]]]))
+
 
 

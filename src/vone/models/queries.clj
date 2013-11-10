@@ -6,6 +6,7 @@
   (:require [ring.util.codec :as codec]
             [clj-time.core :as time]))
 
+
 ;TODO: cache answers
 ;
 (defn- two-dec
@@ -20,6 +21,8 @@
 
 (def ^:private lt (codec/url-encode "<"))
 (def ^:private gt (codec/url-encode ">"))
+(def ^:private gte (codec/url-encode ">="))
+
 (defn- ff
   "format fields for a query string"
   [fields]
@@ -55,10 +58,22 @@
   "Retrieves all teams and the sprints they have particpated in"
   []
   (let [sprint "Workitems:PrimaryWorkitem.Timebox.Name"
-        n "Name"
-        fields [n sprint]
+        team "Name"
+        fields [team sprint]
         query (str "/Data/Team?sel=" (ff fields) "&sort=Name")]
-    (request-transform query (partial setify n sprint))))
+    (request-transform query (partial setify team sprint))))
+
+(defn current-sprints
+  "Retrieves current sprints"
+  []
+  (let [fields ["Name"]
+        now (time/now)
+        now-str (tostr-date now)
+        query (str "/Data/Timebox?sel=" (ff fields)
+                   "&where=EndDate" gte \' now-str \'
+                   ";BeginDate" lt \' now-str \'
+                   ";AssetState!='Dead'&sort=Name")]
+    (flatten (request-flat query fields))))
 
 ;TODO: this is getting called multiple times, it doesn't need to be
 (defn- velocity-all
@@ -99,6 +114,15 @@
   [team]
   (map first (velocity-all team)))
 
+(defn- for-period
+  [begin end f]
+  (let [days (take-while #(time/before? % end)
+                         (filter (complement weekend?)
+                                 (inc-date-stream begin)))]
+     ;google app engine does not allow pmap,
+     ;so use regular map when deploying there
+     (pmap f days)))
+
 (defn- for-sprint
   "Queries f for each sprint day"
   ([team sprint f]
@@ -109,13 +133,8 @@
      (for-sprint team sprint begin end f)))
   ([team sprint begin end f]
    (let [team (codec/url-encode team)
-         sprint (codec/url-encode sprint)
-         days (take-while #(time/before? % end)
-                          (filter (complement weekend?)
-                                  (inc-date-stream begin)))]
-     ;google app engine does not allow pmap,
-     ;so use regular map when deploying there
-     (pmap (partial f team sprint) days))))
+         sprint (codec/url-encode sprint)]
+     (for-period begin end (partial f team sprint)))))
 
 (defn- singular
   "Get the value from a collection of one map with only one key"
@@ -625,7 +644,7 @@
                    "&where=Timebox.Name='" sprint
                    "';Team.Name='" team
                    "';AssetState!='Dead'")]
-    (set (request-flat query ["Number"]))))
+    (set (flatten (request-flat query ["Number"])))))
 
 (defn- churn-data
   [team sprint]
@@ -633,6 +652,12 @@
         begin (time/plus (span "BeginDate") (time/days 1))
         end (span "EndDate")]
     (for-sprint team sprint begin end story-set-on)))
+
+(defn- get-story [story-number]
+  (let [fields ["Estimate" "Number" "Name"]
+        query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
+                   "&where=Number='" story-number "'")]
+    (first (request-flat query fields))))
 
 (defn- added [s]
   (map clojure.set/difference (rest s) s))
@@ -645,11 +670,13 @@
   [team sprint]
   (let [results (churn-data team sprint)
         collect #(reduce clojure.set/union (% results))
-        a (collect added)
-        r (collect removed)]
-    [["Action" "Stories"]
-     ["Added" a]
-     ["Removed" r]]))
+        collect-get #(map get-story (collect %))
+        a (map #(cons "Added" %) (collect-get added))
+        r (map #(cons "Removed" %) (collect-get removed))]
+    (println "a" a)
+    (println "r" r)
+    (cons ["Action" "Points" "Story" "Title"]
+          (concat a r))))
 
 (defn churn
   "The count of stories added to and removed from a sprint"
@@ -669,9 +696,28 @@
     (cons ["Sprint" "Added" "Removed"]
           (map #(churn team %) s))))
 
+;/Data/Scope?where=Scope.Name='TC5.00'&sel=Workitems:Defect.@Count
+(defn- defect-rate-on
+  [scope date]
+  (let [count-open (str "Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='"
+                        (codec/url-encode "QA Complete") "'].@Count")
+        count-total "Workitems:Defect[AssetState!='Dead'].@Count"
+        fields [count-open count-total]
+        query (str "/Data/Scope?asof=" (tostr-date date)
+                   "&where=AssetState!='Dead';Name='" scope "'"
+                   "&sel=" (ff fields))]
+    (first (request-flat query fields 0))))
 
-;TODO
-#_(defn quality
-  [])
+(defn defectRate
+  "Open and total defects for the last 3 months for a project"
+  ([scope]
+   (let [now (time/now)
+         horizon (time/months 3)]
+     (defectRate scope (time/minus now horizon) now)))
+  ([scope begin end]
+   (let [counts (for-period begin end (partial defect-rate-on scope))]
+     (cons ["Day" "Open" "Total"]
+           (map cons (iterate inc 1) counts)))))
+
 
 

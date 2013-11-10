@@ -17,6 +17,10 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
                 {templateUrl: "roadmap", controller: RoadmapCtrl})
             .when("/fabel",
                 {templateUrl: "fabel", controller: FabelCtrl})
+            .when("/allteams",
+                {templateUrl: "allteams", controller: AllTeamsCtrl})
+            .when("/projectdefectrate",
+                {templateUrl: "projectdefectrate", controller: ProjectDefectRateCtrl})
             .when("/overall",
                 {templateUrl: "overall", controller: OverallCtrl})
             .when("/members",
@@ -61,6 +65,13 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
                 $rootScope.teamSprints = data;
             })
             .error($log.error);
+        $http.get("json/current-sprints")
+            .success(function (data, status) {
+                $log.info("Got current sprints");
+                $log.info(data);
+                $rootScope.currentSprints = data;
+            })
+            .error($log.error);
     });
 
 // manual bootstrap, when google api is loaded
@@ -69,3 +80,6 @@ google.setOnLoadCallback(function() {
   angular.bootstrap(document.body, ['vone']);
 });
 
+
+
+

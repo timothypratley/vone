@@ -4,6 +4,13 @@ angular.module('charts', [])
     width: 1000,
     height: 500
   },
+  defectRate: {
+    visualization: "AreaChart",
+    title: "Defect Rate",
+    vAxis: {title: "Defects", minValue: 0},
+    hAxis: {title: "Day"},
+    areaOpacity: 0.0
+  },
   burndown: {
     visualization: "AreaChart",
     title: "Burndown - Total ToDo Remaining",
@@ -134,8 +141,9 @@ angular.module('charts', [])
 .directive('chart', function(options, $log) {
   return function(scope, elem, attrs) {
     var chart, query, o = {};
-    $.extend(o, options.general);
-    $.extend(o, options[attrs.chart]);
+    angular.extend(o, options.general);
+    angular.extend(o, options[attrs.chart]);
+    angular.extend(o, _.pick(attrs, 'height', 'width'));
     elem[0].innerHTML = "Loading " + o.title + "...";
     chart = new google.visualization[o.visualization](elem[0]);
     query = function() {
@@ -166,8 +174,8 @@ angular.module('charts', [])
     rnd = function(x) {
       return Math.round(100*x)/100;
     };
-    $.extend(o, options.general);
-    $.extend(o, options.roadmap);
+    angular.extend(o, options.general);
+    angular.extend(o, options.roadmap);
     elem[0].innerHTML = "Loading " + o.title + "...";
     chart = new google.visualization[o.visualization](elem[0]);
     update = function() {
@@ -214,7 +222,7 @@ angular.module('charts', [])
         pivot.push(header);
         // TODO: sort, or set column sort on chart
         for (k in m) {
-          pivot.push(JSON.parse(k).concat($.map(m[k], rnd)));
+          pivot.push(JSON.parse(k).concat(_.map(m[k], rnd)));
         }
         chart.draw(google.visualization.arrayToDataTable(pivot), o);
       }
@@ -230,6 +238,8 @@ angular.module('charts', [])
     .error($log.error);
   };
 });
+
+
 
 
 
