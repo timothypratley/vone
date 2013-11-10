@@ -589,6 +589,15 @@
                    ";AssetState!='Dead'")]
     (request-transform query transform-members)))
 
+(defn transform-effort
+  [s]
+  (map #(clojure.set/rename-keys % {"Value" :hours}) s))
+(defn effort
+  []
+  (let [fields ["Name" "Value"]
+        query (str "/Data/Actual?sel=" (ff fields)
+                   ";AssetState!='Dead'")]
+    (request-transform query transform-effort)))
 
 ; TODO
 #_(defn allocation
@@ -720,4 +729,4 @@
            (map cons (iterate inc 1) counts)))))
 
 
-
+
