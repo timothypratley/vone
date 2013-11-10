@@ -1,4 +1,4 @@
-(ns vone.models.version-one-request
+(ns vone.views.version-one-request
   (:use [vone.helpers])
   (:require [clj-http.lite.client :as client]
             [clojure.xml :as xml]
@@ -89,6 +89,8 @@
        (println query)
        (println fields)
        (throw e)))))
+
+
 
 
 

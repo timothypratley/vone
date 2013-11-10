@@ -8,24 +8,21 @@
             ;[appengine-magic.servlet :refer [make-servlet-service-method]]
             ;[appengine-magic.multipart-params :refer [wrap-multipart-params]]
             ;[appengine-magic.core :as gae]
-            [vone.route-gen :refer [page-routes service-routes rest-routes]]
-            [vone.views.pages]
-            [vone.models.queries]))
+            [routegen.core :refer :all]
+            [vone.views.pages :refer [home login ping logout]]
+            [vone.views.services]))
 
-(defn login [username password]
-  (println "login" username)
-  (session/put! :username username)
-  (session/put! :password password)
-  username)
 
 (def app-routes
   (apply routes
          (concat
           (page-routes 'vone.views.pages)
-          (service-routes 'vone.models.queries)
-          (rest-routes 'vone.models.queries)
-          [(POST "/login" [username password] (login username password))
-           (GET "/" [] (vone.views.pages/home))
+          (path-routes 'vone.views.services)
+          (post-routes 'vone.views.services)
+          [(GET "/" [] (home))
+           (POST "/login" [username password] (login username password))
+           (GET "/ping" [] (ping))
+           (GET "/logout" [] (logout))
            (GET "" [] (redirect "/"))
            (resources "/")
            (not-found "Not Found")])))
@@ -39,6 +36,10 @@
 ;; entry point for a regular WAR style deployment
 ;(defn -service [this request response]
 ;  ((make-servlet-service-method app-handler) this request response))
+
+
+
+
 
 
 

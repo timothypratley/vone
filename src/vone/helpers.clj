@@ -2,6 +2,13 @@
    (:require [clj-time.format :as format]
              [clj-time.core :as time]))
 
+
+(defmacro spy
+  [& body]
+  `(let [x# ~@body]
+     (printf "=> %s = %s\n" (first '~body) x#)
+     x#))
+
 (defn transpose
   [in]
   (let [c (count in)]
