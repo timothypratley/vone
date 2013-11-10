@@ -105,6 +105,10 @@ function FabelCtrl($scope, $http, $log) {
 
 }
 
+function OverallCtrl($scope, $http, $log) {
+
+}
+
 function MembersCtrl($scope, $http, $log) {
     $http.get('json/members')
         .success(function (data) {
@@ -127,3 +131,4 @@ function RankingsCtrl($scope, $http, $log) {
         .error($log);
 }
 
+

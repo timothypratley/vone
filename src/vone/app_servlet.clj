@@ -1,30 +1,44 @@
-(ns vone.app_servlet
+(ns vone.app-servlet
   (:gen-class :extends javax.servlet.http.HttpServlet)
-  (:use [appengine-magic.servlet :only [make-servlet-service-method]]
-        [appengine-magic.multipart-params :only [wrap-multipart-params]])
-  (:require [appengine-magic.core :as gae]
-            [noir.util.gae :as noir-gae]
-            [noir.server.handler :as handler]
-            [vone.middleware.httpsession :as httpsession]))
+  (:require [compojure.core :refer :all]
+            [compojure.handler :refer [site]]
+            [compojure.route :refer [resources not-found]]
+            [noir.response :refer [redirect]]
+            [noir.session :as session]
+            ;[appengine-magic.servlet :refer [make-servlet-service-method]]
+            ;[appengine-magic.multipart-params :refer [wrap-multipart-params]]
+            ;[appengine-magic.core :as gae]
+            [vone.route-gen :refer [page-routes service-routes rest-routes]]
+            [vone.views.pages]
+            [vone.models.queries]))
 
-;; custom middlewares
-(handler/add-custom-middleware wrap-multipart-params)
+(defn login [username password]
+  (println "login" username)
+  (session/put! :username username)
+  (session/put! :password password)
+  username)
 
-;; load views (must manually load all routes)
-(require 'vone.views.welcome)
-(require 'vone.views.service)
+(def app-routes
+  (apply routes
+         (concat
+          (page-routes 'vone.views.pages)
+          (service-routes 'vone.models.queries)
+          (rest-routes 'vone.models.queries)
+          [(POST "/login" [username password] (login username password))
+           (GET "/" [] (vone.views.pages/home))
+           (GET "" [] (redirect "/"))
+           (resources "/")
+           (not-found "Not Found")])))
 
-;; def the ring handler with httpsession
-;; must also enable sessions in appengine-web.xml
-(def ring-handler
-  (httpsession/wrap-http-session-store
-    (noir-gae/gae-handler
-      {:session-store (httpsession/http-session-store "vone-session")})))
+(def app-handler
+  (session/wrap-noir-session (site app-routes)))
 
-;; def the appengine app
-(gae/def-appengine-app vone-site ring-handler)
+;; def the appengine app for Google App Engine deployment
+;(gae/def-appengine-app app-handler)
 
-;; entry point
-(defn -service [this request response]
-  ((make-servlet-service-method vone-site) this request response))
+;; entry point for a regular WAR style deployment
+;(defn -service [this request response]
+;  ((make-servlet-service-method app-handler) this request response))
 
+
+

@@ -4,9 +4,8 @@ pom.xml
 /classes/
 /bin/
 /target/
-.lein-deps-sum
 .classpath
-.lein-failures
 *~
 *.swp
 *.war
+.lein*

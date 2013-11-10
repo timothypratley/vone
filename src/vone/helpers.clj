@@ -31,9 +31,18 @@
 (defn parse-date
   [date]
   (try
-    (format/parse (format/formatter "yyyy-MM-dd") (.substring date 0 10))
+    (format/parse (format/formatter "yyyy-MM-dd") date)
     (catch Exception e
       nil)))
+
+(defn parse-date-full
+  [date]
+  (try
+    (format/parse (format/formatter "yyyy-MM-dd'T'HH:mm:ss.SSS") date)
+    (catch Exception e
+      nil)))
+
+;(parse-date "2013-05-28T10:49:28.943")
 
 (defn parse-double
   [s]
@@ -61,4 +70,8 @@
 (defn basic-date
   [date]
   (format/unparse (format/formatters :basic-date) date))
+
+
+
+
 
