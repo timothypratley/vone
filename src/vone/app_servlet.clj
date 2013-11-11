@@ -45,7 +45,7 @@
            (not-found "Not Found")])))
 
 (defroutes app-routes
-  (api api-routes)
+  (with-401 (api api-routes))
   (site site-routes))
 
 (def app-handler

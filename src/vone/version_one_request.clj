@@ -37,7 +37,9 @@
     (try
       (client/get url params)
       (catch Exception e
-        (println "xhr failed (" (session/get :username) \: e \) url)
+        ;TODO: treat 401 as an expected failure, no need to log
+        ;... but do want to log other errors
+        ;(println "xhr failed (" (session/get :username) \@ url \))
         (throw e)))))
 
 (defn xml-collapse
@@ -87,8 +89,8 @@
             (xml-collapse (:body (xhr query)) not-found))
      (catch Exception e
        ;TODO: treat 401 as an expected failure, no need to log
-       (println query)
-       (println fields)
+       ;(println query)
+       ;(println fields)
        (throw e)))))
 
 
