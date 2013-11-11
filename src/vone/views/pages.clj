@@ -11,9 +11,6 @@
   (session/clear!)
   "Logged out")
 
-(defn ping []
-  (session/get :username))
-
 (defn login
   ([]
    (html
@@ -231,6 +228,8 @@
      [:li {:ng-repeat "args in argss"}
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
+
+
 
 
 

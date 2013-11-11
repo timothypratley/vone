@@ -2,24 +2,27 @@
 
 Custom reporting for Version One.
 
-Hosted version: http://vonespy.appspot.com/
+Hosted: http://vonespy.appspot.com/
 
 ## Usage
+
+Create a vone.properties file containing:
+```java
+username = username
+password = password
+base-url = http://www3.v1host.com/MyCompany/VersionOne/rest-1.v1
+```
+username/password are optional, the user will be prompted if no account is specified
 
 Install [Leiningen](https://github.com/technomancy/leiningen)
 ```
 lein ring server
 ```
 
-### Custom install
+### Tomcat install
 
 To generate a war file for deployment:
 `lein ring uberwar vone.war`
-
-in src/vone/models/version-one-request.clj:
-```clojure
-(def base-url "http://www.host.com/Customer/VersionOne/rest-1.v1")
-```
 
 ### Google App Engine: vonespy.appspot.com
 

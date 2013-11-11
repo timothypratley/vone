@@ -10,3 +10,4 @@ pom.xml
 *.war
 .lein*
 .nrepl*
+*.properties

@@ -1,5 +1,5 @@
 (ns vone.views.services
-  (:use [vone.views.version-one-request]
+  (:use [vone.version-one-request]
         [clojure.pprint]
         [clojure.set]
         [vone.helpers])
