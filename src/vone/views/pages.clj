@@ -6,6 +6,25 @@
             [hiccup.page :refer :all]
             [hiccup.element :refer :all]))
 
+(defn logout []
+  (println "logout" (session/get :username))
+  (session/clear!)
+  "Logged out")
+
+(defn login
+  ([]
+   (html
+    [:form {:ng-submit "submit()"
+            :novalidate true}
+     [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
+     [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
+     (submit-button "VersionOne Login")]))
+  ([username password]
+   (println "login" username)
+   (session/put! :username username)
+   (session/put! :password password)
+   username))
+
 (defn home []
   (html5
    [:head
@@ -76,28 +95,6 @@
     (include-js "/js/charts.js")
     (include-js "/js/controllers.js")
     (include-js "/js/vone.js")]))
-
-(defn login
-  ([]
-   (html
-    [:form {:ng-submit "submit()"
-            :novalidate true}
-     [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
-     [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
-     (submit-button "VersionOne Login")]))
-  ([username password]
-   (println "login" username)
-   (session/put! :username username)
-   (session/put! :password password)
-   (response/json username)))
-
-(defn logout []
-  (println "logout" (session/get :username))
-  (session/clear!)
-  (html "Logged out"))
-
-(defn ping []
-  (response/json (session/get :username)))
 
 (defn about []
   (html
@@ -231,6 +228,12 @@
      [:li {:ng-repeat "args in argss"}
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
+
+
+
+
+
+
 
 
 

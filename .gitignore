@@ -9,3 +9,5 @@ pom.xml
 *.swp
 *.war
 .lein*
+.nrepl*
+*.properties

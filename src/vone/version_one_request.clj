@@ -1,6 +1,7 @@
-(ns vone.models.version-one-request
-  (:use [vone.helpers])
-  (:require [clj-http.lite.client :as client]
+(ns vone.version-one-request
+  (:require [vone.helpers :refer :all]
+            [vone.config :refer :all]
+            [clj-http.lite.client :as client]
             [clojure.xml :as xml]
             [ring.util.codec :as codec]
             [noir.session :as session]))
@@ -8,7 +9,7 @@
 ;TODO: use with-connection-pool from clj-http
 ;TODO: use :query-params instead of constructing them manually
 
-(def base-url "http://www3.v1host.com/Tideworks/VersionOne/rest-1.v1")
+(def base-url (properties "base-url" "v1host"))
 
 (defn collapse
   "Converts xml into a more condensed structure"
@@ -31,12 +32,14 @@
   "XmlHttpRequest from VersionOne"
   [query]
   (let [url (str base-url query)
-        params {:basic-auth [(or (session/get :username) "none")
-                             (or (session/get :password) "none")]}]
+        params {:basic-auth [(or (session/get :username) (properties "username" "none"))
+                             (or (session/get :password) (properties "password" "none"))]}]
     (try
       (client/get url params)
       (catch Exception e
-        (println "xhr failed (" (session/get :username) \: e \) url)
+        ;TODO: treat 401 as an expected failure, no need to log
+        ;... but do want to log other errors
+        ;(println "xhr failed (" (session/get :username) \@ url \))
         (throw e)))))
 
 (defn xml-collapse
@@ -86,9 +89,13 @@
             (xml-collapse (:body (xhr query)) not-found))
      (catch Exception e
        ;TODO: treat 401 as an expected failure, no need to log
-       (println query)
-       (println fields)
+       ;(println query)
+       ;(println fields)
        (throw e)))))
+
+
+
+
 
 
 

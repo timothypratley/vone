@@ -51,13 +51,6 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
     	};
     })
     .run(function ($http, $rootScope, $log) {
-        $http.get("ping")
-            .success(function (data) {
-                $rootScope.username = angular.fromJson(data);
-            })
-            .error($log.error);
-        // TODO: not sure this belongs here,
-        // but I want to avoid calling it everytime retro is visited
         $http.get("json/team-sprints")
             .success(function (data, status) {
                 $log.info("Got team sprints");
@@ -79,6 +72,10 @@ google.load('visualization', '1', {'packages':['corechart', 'table']});
 google.setOnLoadCallback(function() {
   angular.bootstrap(document.body, ['vone']);
 });
+
+
+
+
 
 
 
