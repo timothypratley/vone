@@ -146,12 +146,12 @@
     [:div {:chart "estimates"}]
     [:div {:chart "failedReview"}]
     [:div {:chart "churnComparison"}]
+    [:div {:chart "churnStories"}]
     [:div {:chart "participants"}]
     [:div.break {:chart "stories"}]
     [:div {:chart "defects"}]
     [:div {:chart "testSets"}]
     [:div {:chart "splits"}]
-    [:div {:chart "churnStories"}]
     [:div.break {:chart "customers"}]
     ;TODO:
     ;[:div "Epics"]
@@ -165,6 +165,7 @@
    [:div.report
     [:ul
      [:li {:ng-repeat "args in argss"}
+      [:hr]
       [:h2 "{{args}}"]
       [:div {:chart "burndown" :width 600 :height 300 :style "float:left;"}]
       [:div {:chart "cumulative" :width 600 :height 300 :style "margin-left:610px;"}]
@@ -213,27 +214,14 @@
      [:a {:href "/#/member/{{m.name}}"} "{{m.name}}"]
      "score:{{m.score}} | points:{{m.points}} | role:{{m.role}} | teir:{{m.tier}} | team:{{m.team}}"]]))
 
-;TODO
-#_(def select-project
-  [:div
-   [:select {:ng-model "project"
-             :ng-options "key as key for (key, value) in projects"}
-    [:option {:value ""} "-- choose project --"]]])
-
 (defn projectdefectrate []
   (html
-   [:h1 "Defect Rate: {{project}}"]
+   [:h1 "Defect Rate: {{today}}"]
    [:div.report
     [:ul
-     [:li {:ng-repeat "args in argss"}
+     [:li {:ng-repeat "args in projects"}
+      [:hr]
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
-
-
-
-
-
-
-
 
 

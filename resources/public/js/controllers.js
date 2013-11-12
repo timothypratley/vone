@@ -1,3 +1,19 @@
+function now() {
+  var today = new Date(),
+      dd = today.getDate(),
+      mm = today.getMonth()+1, //January is 0!
+      yyyy = today.getFullYear();
+
+  if (dd<10) {
+    dd='0'+dd;
+  }
+  if (mm<10) {
+    mm='0'+mm;
+  }
+  return yyyy+'/'+mm+'/'+dd;
+}
+
+
 function AboutCtrl() {
 
 }
@@ -98,32 +114,28 @@ function RetroCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
 }
 
 function AllTeamsCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
-  var team, sprint,
-      today = new Date(),
-      dd = today.getDate(),
-      mm = today.getMonth()+1, //January is 0!
-      yyyy = today.getFullYear();
+  var match = function() {
+    var team, sprint;
 
-  if (dd<10) {
-    dd='0'+dd;
+    $scope.today = now();
+
+    $scope.argss = _.chain($rootScope.teamSprints)
+    .map(function (sprints, team) {
+      var currentSprint = _.intersection(sprints, $rootScope.currentSprints)[0];
+      if (_.isUndefined(currentSprint)) {
+        return undefined;
+      }
+      return team + '/' + currentSprint;
+    })
+    .filter(_.isString)
+    .value();
   }
-  if (mm<10) {
-    mm='0'+mm;
+
+  if ($rootScope.teamSprints) {
+    match($rootScope.teamSprints);
+  } else {
+    $rootScope.$watch('teamSprints', match);
   }
-  $scope.today = yyyy+'/'+mm+'/'+dd;
-
-  $scope.argss = _.chain($rootScope.teamSprints)
-  .map(function (sprints, team) {
-    var currentSprint = _.intersection(sprints, $rootScope.currentSprints)[0];
-    if (_.isUndefined(currentSprint)) {
-      return undefined;
-    }
-    return team + '/' + currentSprint;
-  })
-  .filter(_.isString)
-  .value();
-
-  $log.info("Hi " + $scope.argss);
 }
 
 function RoadmapCtrl($scope, $http, $log) {
@@ -139,7 +151,7 @@ function OverallCtrl($scope, $http, $log) {
 }
 
 function ProjectDefectRateCtrl($scope, $http, $log) {
-  $scope.argss = ['SP5.0.0', 'TC5.00'];
+    $scope.today = now();
 }
 
 function MembersCtrl($scope, $http, $log) {
@@ -163,6 +175,8 @@ function RankingsCtrl($scope, $http, $log) {
   })
   .error($log);
 }
+
+
 
 
 

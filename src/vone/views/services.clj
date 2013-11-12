@@ -114,11 +114,15 @@
   [team]
   (map first (velocity-all team)))
 
+(defn- days-for
+  [begin end]
+  (take-while #(time/before? % end)
+              (filter (complement weekend?)
+                      (inc-date-stream begin))))
+
 (defn- for-period
   [begin end f]
-  (let [days (take-while #(time/before? % end)
-                         (filter (complement weekend?)
-                                 (inc-date-stream begin)))]
+  (let [days (days-for begin (min-date (time/now) end))]
      ;google app engine does not allow pmap,
      ;so use regular map when deploying there
      (pmap f days)))
@@ -129,7 +133,7 @@
    (let [span (sprint-span (codec/url-encode sprint))
          begin (time/plus (span "BeginDate") (time/days 1))
          end (span "EndDate")]
-     (println "TEAM:" team " SPRINT:" sprint " START:" begin "  END:" end)
+     ;(println "TEAM:" team " SPRINT:" sprint " START:" begin "  END:" end)
      (for-sprint team sprint begin end f)))
   ([team sprint begin end f]
    (let [team (codec/url-encode team)
@@ -647,53 +651,58 @@
        sort))
 
 
-(defn- story-set-on
+(defn- storys-on
   [team sprint date]
-  (let [query (str "/Hist/PrimaryWorkitem?sel=Number&asof=" (tostr-date date)
+  (let [fields ["Number" "Name" "Estimate"]
+        query (str "/Hist/PrimaryWorkitem?sel=" (ff fields)
+                   "&asof=" (tostr-date date)
                    "&where=Timebox.Name='" sprint
                    "';Team.Name='" team
                    "';AssetState!='Dead'")]
-    (set (flatten (request-flat query ["Number"])))))
+    (group-by first (request-flat query fields))))
+
+(storys-on "TC+Sharks" "TC1313" (time/now))
 
 (defn- churn-data
   [team sprint]
   (let [span (sprint-span (codec/url-encode sprint))
         begin (time/plus (span "BeginDate") (time/days 1))
         end (span "EndDate")]
-    (for-sprint team sprint begin end story-set-on)))
+    (for-sprint team sprint begin end storys-on)))
 
-(defn- get-story [story-number]
-  (let [fields ["Estimate" "Number" "Name"]
-        query (str "/Data/PrimaryWorkitem?sel=" (ff fields)
-                   "&where=Number='" story-number "'")]
-    (first (request-flat query fields))))
+(defn- diff [a b]
+  (reduce dissoc a (keys b)))
 
-(defn- added [s]
-  (map clojure.set/difference (rest s) s))
+;(fact (diff {:a 1 :b 2} {:b 3}) => {:a 1})
 
-(defn- removed [s]
-  (map clojure.set/difference s (rest s)))
+(update-in [1 2 3] [0] inc)
+
+(defn- collect [as bs]
+  (let [diffs (map first (vals (reduce merge (map diff as bs))))
+        link #(str "<a href='" base-url "/assetdetail.v1?Number=" % "'>" % "</a>")]
+    (map #(update-in % [0] link) (map vec diffs))))
 
 (defn churnStories
   "The story names added to a sprint, and removed from a sprint"
   [team sprint]
-  (let [results (churn-data team sprint)
-        collect #(reduce clojure.set/union (% results))
-        collect-get #(map get-story (collect %))
-        a (map #(cons "Added" %) (collect-get added))
-        r (map #(cons "Removed" %) (collect-get removed))]
-    (println "a" a)
-    (println "r" r)
-    (cons ["Action" "Points" "Story" "Title"]
+  (let [stories (churn-data team sprint)
+        added (collect (rest stories) stories)
+        removed (collect stories (rest stories))
+        a (map #(cons "Added" %) added)
+        r (map #(cons "Removed" %) removed)]
+    (cons ["Action" "Story" "Title" "Points"]
           (concat a r))))
+
+(churnStories "TC+Sharks" "TC1313")
 
 (defn churn
   "The count of stories added to and removed from a sprint"
   [team sprint]
-  (let [results (churn-data team sprint)
-        sum #(reduce + (map count (% results)))
-        a (sum added)
-        r (sum removed)]
+  (let [stories (churn-data team sprint)
+        added (collect (rest stories) stories)
+        removed (collect stories (rest stories))
+        a (count added)
+        r (count removed)]
     [sprint a r]))
 
 (defn churnComparison
@@ -713,7 +722,7 @@
         count-total "Workitems:Defect[AssetState!='Dead'].@Count"
         fields [count-open count-total]
         query (str "/Data/Scope?asof=" (tostr-date date)
-                   "&where=AssetState!='Dead';Name='" scope "'"
+                   "&where=AssetState!='Dead';Name='" (codec/url-encode scope) "'"
                    "&sel=" (ff fields))]
     (first (request-flat query fields 0))))
 
@@ -726,7 +735,17 @@
   ([scope begin end]
    (let [counts (for-period begin end (partial defect-rate-on scope))]
      (cons ["Day" "Open" "Total"]
-           (map cons (iterate inc 1) counts)))))
+           (map cons (days-for begin end) counts)))))
 
+(defn projects
+  "Retrieves projects with open workitems"
+  []
+  (let [fields ["Name"]
+        query (str "/Data/Scope?sel=" (ff fields)
+                   "&where=AssetState!='Dead';"
+                   "Workitems:PrimaryWorkitem[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='"
+                   (codec/url-encode "QA Complete") "'].@Count" gt "'0'"
+                   "&sort=Name")]
+    (flatten (request-flat query fields))))
 
-
+

@@ -34,6 +34,11 @@
 (defn weekend?
   [#^org.joda.time.DateTime ds]
   (> (.get (.dayOfWeek ds)) 5))
+(defn min-date
+  [#^org.joda.time.DateTime dsa #^org.joda.time.DateTime dsb]
+  (if (time/before? dsa dsb)
+    dsa
+    dsb))
 
 (defn parse-date
   [date]
@@ -82,3 +87,4 @@
 
 
 
+

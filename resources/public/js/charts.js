@@ -2,7 +2,8 @@ angular.module('charts', [])
 .value('options', {
   general: {
     width: 1000,
-    height: 500
+    height: 500,
+    allowHtml: true
   },
   defectRate: {
     visualization: "AreaChart",
@@ -15,21 +16,21 @@ angular.module('charts', [])
     visualization: "AreaChart",
     title: "Burndown - Total ToDo Remaining",
     vAxis: {title: "ToDo Hours", minValue: 0},
-    hAxis: {title: "Day"},
+    hAxis: {title: "Day", maxValue: 14},
     areaOpacity: 0.0
   },
   burndownComparison: {
     visualization: "AreaChart",
     title: "Burndown Comparison",
     vAxis: {title: "ToDo Hours", minValue: 0},
-    hAxis: {title: "Day"},
+    hAxis: {title: "Day", maxValue: 14},
     areaOpacity: 0.0
   },
   cumulative: {
     visualization: "AreaChart",
     title: "Cumulative Flow - Story Status Over Time",
     vAxis: {title: "Story Points", minValue: 0},
-    hAxis: {title: "Day"},
+    hAxis: {title: "Day", maxValue: 14},
     isStacked: true,
     areaOpacity: 0.8
   },
@@ -37,7 +38,7 @@ angular.module('charts', [])
     visualization: "AreaChart",
     title: "Previous Cumulative Flow",
     vAxis: {title: "Story Points", minValue: 0},
-    hAxis: {title: "Day"},
+    hAxis: {title: "Day", maxValue: 14},
     isStacked: true,
     areaOpacity: 0.8
   },
@@ -238,6 +239,8 @@ angular.module('charts', [])
     .error($log.error);
   };
 });
+
+
 
 
 

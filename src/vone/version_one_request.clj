@@ -32,14 +32,14 @@
   "XmlHttpRequest from VersionOne"
   [query]
   (let [url (str base-url query)
-        params {:basic-auth [(or (session/get :username) (properties "username" "none"))
-                             (or (session/get :password) (properties "password" "none"))]}]
+        params {:basic-auth [(or (try (session/get :username) (catch Exception e)) (properties "username" "none"))
+                             (or (try (session/get :password) (catch Exception e)) (properties "password" "none"))]}]
     (try
       (client/get url params)
       (catch Exception e
         ;TODO: treat 401 as an expected failure, no need to log
         ;... but do want to log other errors
-        ;(println "xhr failed (" (session/get :username) \@ url \))
+        (println "xhr failed (" (session/get :username) \@ url \))
         (throw e)))))
 
 (defn xml-collapse
@@ -92,6 +92,8 @@
        ;(println query)
        ;(println fields)
        (throw e)))))
+
+
 
 
 
