@@ -128,6 +128,7 @@ function AllTeamsCtrl($scope, $routeParams, $location, $rootScope, $http, $log) 
       return team + '/' + currentSprint;
     })
     .filter(_.isString)
+    .sortBy(_.identity)
     .value();
   }
 
