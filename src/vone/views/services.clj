@@ -57,21 +57,18 @@
 (defn current-sprints
   "Retrieves current sprints"
   []
-  (let [now-str (tostr-date (time/now))
-        (flatten (request-rows "/Data/Timebox"
-                               {:sel "Name"
-                                :where (str "EndDate>='" now-str
-                                            "';BeginDate<'" now-str
-                                            "';AssetState!='Dead'&sort=Name")}))
+  (let [now-str (tostr-date (time/now))]
+    (flatten (request-rows "/Data/Timebox"
+                           {:sel "Name"
+                            :where (str "EndDate>='" now-str
+                                        "';BeginDate<'" now-str
+                                        "';AssetState!='Dead'&sort=Name")}))))
 
 ;TODO: this is getting called multiple times, it doesn't need to be
 (defn- velocity-all
   [team]
   (let [sum-story-points (str "Workitems:PrimaryWorkitem[Team.Name='" team
-                              "';AssetState!='Dead'].Estimate.@Sum")
-        fields ["Name" sum-story-points]
-        query (str "/Data/Timebox?" (select fields)
-                   "&where=" sum-story-points ">'0'&sort=EndDate")]
+                              "';AssetState!='Dead'].Estimate.@Sum")]
     (request-rows "/Data/Timebox"
                   {:sel (str "Name," sum-story-points)
                    :where (str sum-story-points ">'0'")
@@ -98,8 +95,7 @@
   (let [sprints (velocity-all team)
         c (count-to sprint (map first sprints))]
     (cons ["Sprint" "Story Points"]
-          (take-last 5
-                     (take c sprints)))))
+          (take-last 5 (take c sprints)))))
 
 (defn- sprints
   "Get the name of all sprints that a particular team has done work in"
@@ -138,11 +134,10 @@
 (defn- todo-on
   "Get the todo hours on a particular day"
   [team sprint date]
-  (let [fields [(str "Workitems[Team.Name='" team "';AssetState!='Dead'].ToDo.@Sum")]
-        query (str "/Hist/Timebox?asof=" (tostr-date date)
-                   "&where=Name='" sprint
-                   "'&" (select fields))]
-    (first (request-flat query fields))))
+  (request-row "/Hist/Timebox"
+               {:asof (tostr-date date)
+                :sel (str "Workitems[Team.Name='" team "';AssetState!='Dead'].ToDo.@Sum")
+                :where (str "Name='" sprint \')}))
 
 ;TODO: There is no need to get a burndown if we have the comparison? would have to manage data clientside though.
 (defn burndown
@@ -169,27 +164,23 @@
   (update-in m [k] (fnil + 0) v))
 
 (defn- summize
-  "Given a collection of maps,
-   sums up values in those maps retrieved with value-selector
-   by making keys retrieved with key-selector,
+  "Given a collection of pairs,
+   sums up seconds by making keys of first,
    returning a map of the totals"
-  [[key-selector value-selector] c]
+  [c]
   (letfn [(sum-by-key [m entity]
-            (let [k (entity key-selector)
+            (let [k (first entity)
                   ;TODO: is there a nicer way to deal with empty values?
-                  k (if (number? k) "None" k)]
-               (map-add m k (entity value-selector))))]
+                  k (if (zero? k) "None" k)]
+               (map-add m k (second entity))))]
     (reduce sum-by-key (sorted-map) c)))
 
 (defn- cumulative-on
   [team sprint date]
-  (let [fields ["Status.Name" "Estimate"]
-        query (str "/Hist/PrimaryWorkitem?asof=" (tostr-date date)
-                   "&" (select fields)
-                   "&where=Timebox.Name='" sprint
-                   "';Team.Name='" team
-                   "';AssetState!='Dead'")]
-    (request-transform query (partial summize fields))))
+  (summize (request "/Hist/PrimaryWorkitem"
+                    {:asof (tostr-date date)
+                     :sel "Status.Name,Estimate"
+                     :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")})))
 
 (defn cumulative
   "Gets a table of the cumulative flow (story points by status per day)"
@@ -217,12 +208,9 @@
   "Gets a table of story points per customer"
   [team sprint]
   (cons ["Customer" "Story Points"]
-	  (let [fields ["Parent.Name" "Estimate"]
-          query (str "/Data/PrimaryWorkitem?" (select fields)
-                     "&where=Timebox.Name='" sprint
-	                   "';Team.Name='" team
-	                   "';AssetState!='Dead'" )]
-	    (request-transform query (partial summize fields)))))
+        (summize (request "/Data/PrimaryWorkitem"
+                          {:sel "Parent.Name,Estimate"
+                           :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")}))))
 
 (defn customersNext
   "Gets a table of story points per customer for the next sprint"
@@ -233,21 +221,16 @@
 ;TODO: query team instead, don't get people not in the team
 (defn- participants-all
   [team sprint]
-  (let [fields ["Owners.Name"]
-        query (str "/Data/Workitem?" (select fields)
-                   "&where=Timebox.Name='" sprint
-                   "';Team.Name='" team
-                   "';AssetState!='Dead'")]
-                  ;TODO: is there a nicer way to deal with empty values
-                  ; rather than number?
-    (set (remove number? (flatten (request-flat query fields))))))
+  (set (remove zero? (flatten (request-rows "/Data/Workitem"
+                                              {:sel "Owners.Name"
+                                               :where "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'"})))))
 
 (defn- map-add-estimates
   [m estimate-owners]
   (let [estimate (first estimate-owners)
         owners (second estimate-owners)]
     ; TODO: nil is replaced by 0 when there are no owners
-    (if (not (number? owners))
+    (if (not (zero? owners))
       (reduce #(map-add %1 %2 estimate) m owners)
       m)))
 
@@ -261,17 +244,14 @@
 (defn participants
   "Retrieves a table of effort recorded per participant"
   [team sprint]
-  (let [fields ["Estimate" "Owners.Name"]
-        query (str "/Data/PrimaryWorkitem?" (select fields)
-                   "&where=Timebox.Name='" sprint
-                   "';Team.Name='" team
-                   "';AssetState!='Dead'")
-        points (reduce map-add-estimates {} (request-flat query fields))
-        fields ["Member.Name" "Value"]
-        query (str "/Data/Actual?" (select fields)
-                   "&where=Timebox.Name='" sprint
-                   "';Team.Name='" team \')
-        hours (reduce map-add-hours {} (request-flat query fields))]
+  (let [workitems (request-rows "/Data/PrimaryWorkitem"
+                                {:sel "Estimate,Owners.Name"
+                                 :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")})
+        points (reduce map-add-estimates {} workitems)
+        actuals (request-rows "/Data/Actual"
+                              {:sel "Member.Name,Value"
+                               :where (str "Timebox.Name='" sprint "';Team.Name='" team \')})
+        hours (reduce map-add-hours {} actuals)]
     (cons ["Member" "Points" "Hours"]
           (for [member (apply sorted-set (concat (keys points) (keys hours)))]
             [member (get points member 0) (two-dec (get hours member 0))]))))
@@ -282,18 +262,17 @@
         owners (second estimate-owners)
         sprint (last estimate-owners)]
     ; TODO: nil is replaced by 0 when there are no owners
-    (if-not (or (number? owners) (number? sprint))
+    (if (or (zero? owners) (zero? sprint))
+      m
       (reduce #(update-in %1 [%2 sprint] (fnil + 0) estimate)
-              m owners)
-      m)))
+              m owners))))
 
 (defn participation
   "Table of story points per member per sprint"
   []
-  (let [fields ["Estimate" "Owners.Name" "Timebox.Name"]
-        query (str "/Data/PrimaryWorkitem?" (select fields)
-                   "&where=AssetState!='Dead'")
-        points (reduce map-add-sprint {} (request-flat query fields))]
+  (let [points (reduce map-add-sprint {} (request-rows "/Data/PrimaryWorkitem"
+                                                       {:sel "Estimate,Owners.Name,Timebox.Name"
+                                                        :where "AssetState!='Dead'"}))]
     (cons ["Member" "Sprint" "Points"]
           (apply concat
             (for [member (apply sorted-set (keys points))]
@@ -342,14 +321,10 @@
 (defn fabel
   "Identifies stories that have invalid data"
   []
-  (let [fields ["Number" "Name" "Estimate" "Team.Name"
-                "Owners.Name" "Description"
-                "Parent.Name"]
-        query (str "/Data/Story?" (select fields)
-                   "&where=Timebox.State.Code='ACTV'"
-                   ";AssetState!='Dead'")
-        result (request-transform query identity)]
-    (for [s result
+  (let [stories (request "/Data/Story"
+                         {:sel "Number,Name,Estimate,Team.Name,Owners.Name,Description,Parent.Name"
+                          :where "Timebox.State.Code='ACTV';AssetState!='Dead'"})]
+    (for [s stories
           :let [errors (check-story s)]
           :when errors]
       [(s "Team.Name") (s "Number") (apply vector errors)])))
@@ -378,10 +353,11 @@
                 count-test-cases
                 sum-hour-estimates
                 sum-hour-actuals
-                capacity]
-        query (str "/Data/Timebox?" (select fields)
-                   "&where=" sum-point-estimates ">'0'&sort=EndDate")]
-    (request-flat query fields)))
+                capacity]]
+    (request-rows "/Data/Timebox"
+                  {:sel (apply str (interpose \, fields))
+                   :where (str sum-point-estimates ">'0'")
+                   :sort "EndDate"})))
 
 (defn- with-capacity
   [team estimates]
@@ -458,13 +434,12 @@
 
 (defn- workitems
   ([]
-   (let [fields ["Owners.Name" "Estimate"]
-         horizon (time/years 1)
+   (let [horizon (time/years 1)
          now (time/now)
-         query (str "/Data/PrimaryWorkitem?" (select fields)
-                    "&where=Owners[AssetState!='Dead'].@Count>'0';ChangeDate>'" (tostr-date (time/minus now horizon))
-                    "';AssetState='Closed'")
-         result (request-flat query fields)]
+         result (request-rows "/Data/PrimaryWorkitems"
+                              {:sel "Owners.Name,Estimate"
+                               :where (str "Owners[AssetState!='Dead'].@Count>'0';ChangeDate>'"
+                                           (tostr-date (time/minus now horizon)) "';AssetState='Closed'")})]
      (map #(list (first %) (two-dec (second %)))
           (reduce (fn [m owners-estimate]
                     (let [names (first owners-estimate)
@@ -472,25 +447,22 @@
                       (reduce #(update-in %1 [%2] (fnil + 0) estimate) m names)))
                   (sorted-map) result))))
   ([member asset-type]
-   (let [fields ["ChangeDate" "Estimate"]
-         horizon (time/years 1)
-         now (time/now)
-         query (str "/Data/" asset-type
-                    "?" (select fields)
-                    "&where=ChangeDate>'" (tostr-date (time/minus now horizon))
-                    "';Owners[Name='" member
-                    "'].@Count>'0';AssetState='Closed'&sort=ChangeDate")]
-     (cons fields
-           (accumulate (request-flat query fields)))))
+   (let [horizon (time/years 1)
+         since (tostr-date (time/minus (time/now) horizon))]
+     (cons ["ChangeDate" "Estimate"]
+           (accumulate (request-rows (str "/Data/" asset-type)
+                                     {:sel "ChangeDate,Estimate"
+                                      :where (str "ChangeDate>'" since
+                                                  "';Owners[Name='" member
+                                                  "'].@Count>'0';AssetState='Closed'&sort=ChangeDate")})))))
   ([team sprint asset-type plural]
    (cons [plural]
-         (let [fields ["Name"]
-               query (str "/Data/" asset-type
-                          "?" (select fields)
-                          "&where=Timebox.Name='" sprint
-                          "';Team.Name='" team
-                          "';-SplitTo;AssetState!='Dead'&sort=Name")]
-           (request-flat query fields)))))
+         (request-rows (str "/Data/" asset-type)
+                       {:sel "Name"
+                        :where (str "Timebox.Name='" sprint
+                                    "';Team.Name='" team
+                                    "';-SplitTo;AssetState!='Dead'")
+                        :sort "Name"}))))
 
 (defn stories
   "Gets a table of stories"
@@ -511,12 +483,11 @@
   "Gets a table of splits"
   [team sprint]
   (cons ["Splits"]
-        (let [fields ["Name"]
-              query (str "/Data/PrimaryWorkitem?" (select fields)
-                         "&where=Timebox.Name='" sprint
-                         "';Team.Name='" team
-                         "';SplitTo;AssetState!='Dead'&sort=Name")]
-          (request-flat query fields))))
+        (request-rows "/Data/PrimaryWorkitem"
+                      {:sel "Name"
+                       :where (str "Timebox.Name='" sprint
+                                   "';Team.Name='" team
+                                   "';SplitTo;AssetState!='Dead'&sort=Name")})))
 
 (defn- nest [data criteria]
   (if (empty? criteria)
@@ -549,15 +520,14 @@
 (defn roadmap
   "Get the projected work"
   []
-  (let [fields ["Scope.Name" "Parent.Name" "Team.Name" "Timebox.EndDate" "Estimate"]
-        horizon (time/months 4)
-        now (time/now)
-        query (str "/Data/PrimaryWorkitem?" (select fields)
-                   "&where=Estimate;Team.Name"
-                   ";Timebox.EndDate<'" (tostr-date (time/plus now horizon))
-                   "';Timebox.EndDate>'" (tostr-date (time/minus now horizon)) \')
-        result (request-flat query fields "None")]
-    (roadmap-transform result)))
+  (let [horizon (time/months 4)
+        now (time/now)]
+    stories (request-rows "/Data/PrimaryWorkitem"
+                          {:sel "Scope.Name,Parent.Name,Team.Name,Timebox.EndDate,Estimate"
+                           :where (str "Estimate;Team.Name"
+                                       ";Timebox.EndDate<'" (tostr-date (time/plus now horizon))
+                                       "';Timebox.EndDate>'" (tostr-date (time/minus now horizon)) \')})
+    (roadmap-transform stories)))
 
 (defn feedback
   "Get the feedback for a retrospective"
@@ -565,7 +535,10 @@
   (let [query (str "/Data/Retrospective?sel=Summary"
                    "&where=Team.Name='" team
                    "';Timebox.Name='" sprint \')]
-    (request-transform query singular)))
+    (singular (request "/Data/Retrospective"
+                       {:sel "Summary"
+                        :where (str "Team.Name='" team
+                                    "';Timebox.Name='" sprint \')}))))
 
 (defn- transform-members
   [s]
@@ -573,23 +546,23 @@
                                     "DefaultRole.Order" :tier
                                     "MemberLabels.Name" :team})
        s))
+
 (defn members
   "Retrieve a memberlist with roles"
   []
-  (let [fields ["Name" "DefaultRole.Name" "DefaultRole.Order" "MemberLabels.Name"]
-        query (str "/Data/Member?" (select fields)
-                   ";AssetState!='Dead'")]
-    (request-transform query transform-members)))
+  (transform-members (request "/Data/Member"
+                              {:sel "Name,DefaultRole.Name,DefaultRole.Order,MemberLabels.Name"
+                               :where "AssetState!='Dead'"})))
 
 (defn transform-effort
   [s]
   (map #(clojure.set/rename-keys % {"Value" :hours}) s))
+
 (defn effort
   []
-  (let [fields ["Name" "Value"]
-        query (str "/Data/Actual?" (select fields)
-                   ";AssetState!='Dead'")]
-    (request-transform query transform-effort)))
+  (transform-effort (request "/Data/Actual"
+                             {:sel "Name,Value"
+                              :where "AssetState!='Dead'"})))
 
 ; TODO
 #_(defn allocation
@@ -612,11 +585,10 @@
 
 (defn- failed-review-all
   [team]
-  (let [query (str "/Hist/PrimaryWorkitem?sel=Timebox.Name,Number,Status.Name&Sort=Timebox.Name,Number,ChangeDate"
-                   "&where=Team.Name='" team
-                   "';AssetState!='Dead';Timebox.Name;Status.Name")
-        result (request-transform query count-failed)]
-    result))
+  (count-failed (request "/Hist/PrimaryWorkitem"
+                         {:sel "Timebox.Name,Number,Status.Name"
+                          :where (str "Team.Name='" team "';AssetState!='Dead';Timebox.Name;Status.Name")
+                          :sort "Timebox.Name,Number,ChangeDate"})))
 
 (defn failedReview
   "A table of the count of failed review events for a team over the last 5 sprints"
@@ -640,13 +612,14 @@
 
 (defn- storys-on
   [team sprint date]
-  (let [fields ["Number" "Name" "Estimate"]
-        query (str "/Hist/PrimaryWorkitem?" (select fields)
-                   "&asof=" (tostr-date date)
-                   "&where=Timebox.Name='" sprint
-                   "';Team.Name='" team
-                   "';AssetState!='Dead'")]
-    (group-by second (map #(cons (readable-date date) %) (request-flat query fields)))))
+  (group-by second
+            (map #(cons (readable-date date) %)
+                 (request-rows "/Hist/PrimaryWorkitem"
+                               {:asof (tostr-date date)
+                                :sel "Number,Name,Estimate"
+                                :where (str "Timebox.Name='" sprint
+                                            "';Team.Name='" team
+                                            "';AssetState!='Dead'")}))))
 
 (defn- churn-data
   [team sprint]
@@ -703,12 +676,11 @@
 (defn- defect-rate-on
   [scope date]
   (let [count-open "Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count"
-        count-total "Workitems:Defect[AssetState!='Dead'].@Count"
-        fields [count-open count-total]
-        query (str "/Data/Scope?asof=" (tostr-date date)
-                   "&" (select fields)
-                   "&where=AssetState!='Dead';Name='" scope "'")]
-    (first (request-flat query fields))))
+        count-total "Workitems:Defect[AssetState!='Dead'].@Count"]
+    (request-row "/Data/Scope"
+                 {:asof (tostr-date date)
+                  :sel (str count-open \, count-total)
+                  :where (str "AssetState!='Dead';Name='" scope \')})))
 
 (defn defectRate
   "Open and total defects for the last 3 months for a project"
@@ -724,15 +696,10 @@
 (defn projects
   "Retrieves projects with open workitems"
   []
-  (let [fields ["Name"]
-        query (str "/Data/Scope?" (select fields)
-                   "&where=AssetState!='Dead';"
-                   "Workitems:PrimaryWorkitem[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'0'"
-                   "&sort=Name")]
-    (flatten (request-flat query fields))))
-
-
-
-
+  (flatten (request-rows "/Data/Scope"
+                         {:sel "Name"
+                          :where (str "AssetState!='Dead';"
+                                      "Workitems:PrimaryWorkitem[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'0'")
+                          :sort "Name"})))
 
 

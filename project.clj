@@ -6,7 +6,7 @@
                  [hiccup "1.0.4"]
                  [lib-noir "0.7.5"]
                  [cheshire "5.2.0"]
-                 [routegen "0.1.2"]
+                 [routegen "0.1.3"]
                  [clj-http-lite "0.2.0"]
                  [slingshot "0.10.3"]
                  [clj-time "0.6.0"]
@@ -16,7 +16,10 @@
             [lein-midje "3.0.0"]
             [lein-ring "0.8.6"]
             [lein-ancient "0.5.3"]]
+  :repositories {"local" ~(str (.toURI (java.io.File. "/repo")))}
   :ring {:handler vone.app-servlet/app-handler})
+
+
 
 
 

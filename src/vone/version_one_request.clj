@@ -54,16 +54,14 @@
       (println x)
       (throw e))))
 
-;TODO: does transform suck or rule?
-
 (defn request
   "Makes an xml http request and collapses the body"
-  ([query args transform]
-   (request-transform query args 0))
-  ([query args transform not-found]
+  ([query args]
+   (query args 0))
+  ([query args not-found]
    (let [response (xhr query args)
-         data (xml-collapse (response :body) not-found)]
-     (transform data))))
+         entities (xml-collapse (response :body) not-found)]
+     entities)))
 
 (defn unmap
   "Replaces key:value entities with the value
@@ -74,12 +72,14 @@
 (defn request-rows
   "Get rows of values with columns in the order you specified"
   [query args]
-  (request query args
-           (partial unmap (clojure.string/split (args :sel) #","))))
+  (unmap (clojure.string/split (args :sel) #",")
+         (request query args)))
 
 ;TODO: do I need it?
 (defn request-row
   "Get just a single row result"
   [query args]
   (first (request-rows)))
+
+
 
