@@ -1,11 +1,11 @@
 (ns vone.parse-tests
   (:require [noir.session :as session])
   (:use [vone.helpers]
-        [vone.models.queries]
-        [vone.models.version-one-request]
+        [vone.version-one-request]
         [clojure.test]
         [clojure.pprint]
         [clojure.xml :as xml]))
+
 
 (deftest test-parse
   (testing "Conversion of VersionOne xml into a clojure structure"
@@ -21,9 +21,6 @@
                       "BeginDate" (parse-date "2012-07-18")}])))))
 
 
-;TODO: store auth in config file?
-;TODO: keep .V1.Ticket.Tideworks
-;;TODO: private can't be tested???
 (comment
 (deftest test-cumulative-on-status
   ;;(with-redefs [session/get {:username "" :password ""}]
@@ -40,7 +37,7 @@
   )
 
 (deftest test-empty-xml
-    (let [x 
+    (let [x
 "<?xml version='1.0' encoding='UTF-8'?>
 <History total='1' pageSize='2147483647' pageStart='0'>
 <Asset href='/Tideworks/VersionOne/rest-1.v1/Data/Timebox/475626/1335982' id='Timebox:475626:1335982'>
@@ -52,3 +49,4 @@
   ;(testing "Names can retrieve a list of statuses"
            ;(println (names "username" "password" "StoryStatus"))))
 
+

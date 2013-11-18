@@ -1,8 +1,12 @@
 (ns vone.json-tests
   (:require [cheshire.custom :as custom]
             [noir.response :as response])
-  (:use [vone.helpers]))
+  (:use [vone.helpers]
+        [clojure.test]))
 
+
+(deftest test-nil-json
+         (is (not= nil (response/json {:foo nil}))))
 
 (custom/add-encoder org.joda.time.DateTime
   (fn [d jsonGenerator]
@@ -17,3 +21,4 @@
 
 (println (json (org.joda.time.DateTime.)))
 
+

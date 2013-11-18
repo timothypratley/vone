@@ -6,8 +6,8 @@
             [ring.util.codec :as codec]
             [noir.session :as session]))
 
-;TODO: use with-connection-pool from clj-http
-;TODO: use :query-params instead of constructing them manually
+
+;TODO: with-connection-pool from clj-http might be faster
 
 (def base-url (properties "base-url" "v1host"))
 
@@ -30,16 +30,17 @@
 
 (defn xhr
   "XmlHttpRequest from VersionOne"
-  [query]
+  [query args]
   (let [url (str base-url query)
         params {:basic-auth [(or (try (session/get :username) (catch Exception e)) (properties "username" "none"))
-                             (or (try (session/get :password) (catch Exception e)) (properties "password" "none"))]}]
+                             (or (try (session/get :password) (catch Exception e)) (properties "password" "none"))]
+                :query-params args}]
     (try
       (client/get url params)
       (catch Exception e
         ;TODO: treat 401 as an expected failure, no need to log
         ;... but do want to log other errors
-        (println "xhr failed (" (session/get :username) \@ url \))
+        (println "xhr failed (" (first (params :basic-auth)) \@ url \))
         (throw e)))))
 
 (defn xml-collapse
@@ -53,55 +54,32 @@
       (println x)
       (throw e))))
 
-;public
-(defn request-transform
-  ([query transform]
-   (request-transform query transform 0))
-  ([query transform not-found]
-   (let [result (-> (xhr query)
-                  :body
-                  (xml-collapse not-found))]
-     ;TODO: use a safety call pattern instead
-	   (try
-	     (transform result)
-	     (catch Exception e
-         (println query)
-	       (println "transform failed:" result)
-           (throw e))))))
+;TODO: does transform suck or rule?
+
+(defn request
+  "Makes an xml http request and collapses the body"
+  ([query args transform]
+   (request-transform query args 0))
+  ([query args transform not-found]
+   (let [response (xhr query args)
+         data (xml-collapse (response :body) not-found)]
+     (transform data))))
 
 (defn unmap
-  [fields m]
-  (cond
-    (map? m) (map m (map codec/url-decode fields))
-    (coll? m) (map (partial unmap fields) m)
-    :else m))
+  "Replaces key:value entities with the value
+  for each of the fields in the order supplied"
+  [fields col]
+  (map #(map (partial get %) fields) col))
 
-;public
-(defn request-flat
-  "Makes an xml http request, collapses it,
-   and replaces key:value entities with the value
-   for each of the fields in the order supplied"
-  ([query fields]
-   (request-flat query fields 0))
-  ([query fields not-found]
-   (try
-     (unmap fields
-            (xml-collapse (:body (xhr query)) not-found))
-     (catch Exception e
-       ;TODO: treat 401 as an expected failure, no need to log
-       ;(println query)
-       ;(println fields)
-       (throw e)))))
+(defn request-rows
+  "Get rows of values with columns in the order you specified"
+  [query args]
+  (request query args
+           (partial unmap (clojure.string/split (args :sel) #","))))
 
-
-
-
-
-
-
-
-
-
-
-
+;TODO: do I need it?
+(defn request-row
+  "Get just a single row result"
+  [query args]
+  (first (request-rows)))
 
