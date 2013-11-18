@@ -19,10 +19,9 @@
 
 (defn sprint-span
   [sprint]
-  (request "/Data/Timebox"
-           {:sel "BeginDate,EndDate"
-            :where (str "Name='" sprint \')}
-           first))
+  (first (request "/Data/Timebox"
+                  {:sel "BeginDate,EndDate"
+                   :where (str "Name='" sprint \')})))
 
 (defn names
   "Retrieves a sorted seqence of asset names"
@@ -33,23 +32,22 @@
    (flatten (request-rows (str "/Hist/" asset)
                           {:asof (tostr-date asof)
                            :sel "Name"
-                           :where "Description;AssetState!='Dead'&sort=Order"}))))
+                           :where "Description;AssetState!='Dead'"
+                           :sort "Order"}))))
 
-(defn- index-pairs
-  "Creates a hashmap of sorted sets from a sequence of pairs where the first value is the index"
+(defn- index-sprints
+  "Creates a hashmap of sorted sets"
   [pairs]
-  (reduce
-   (fn [m [a b]]
-     (update-in m [a]
-                (fnil conj (sorted-set-by #(compare %2 %1)))))
-   {}
-   pairs))
+  (reduce (fn [m [a b]]
+            (assoc m a (apply sorted-set-by #(compare %2 %1) b)))
+          {}
+          pairs))
 
 ;TODO: could very well calculate the velocity here also!
 (defn team-sprints
   "Retrieves all teams and the sprints they have particpated in"
   []
-  (index-pairs
+  (index-sprints
    (request-rows "/Data/Team"
                  {:sel "Name,Workitems:PrimaryWorkitem.Timebox.Name"
                   :sort "Name"})))
@@ -62,7 +60,8 @@
                            {:sel "Name"
                             :where (str "EndDate>='" now-str
                                         "';BeginDate<'" now-str
-                                        "';AssetState!='Dead'&sort=Name")}))))
+                                        "';AssetState!='Dead'")
+                            :sort "Name"}))))
 
 ;TODO: this is getting called multiple times, it doesn't need to be
 (defn- velocity-all
@@ -126,18 +125,13 @@
   ([team sprint begin end f]
    (for-period begin end (partial f team sprint))))
 
-(defn- singular
-  "Get the value from a collection of one map with only one key"
-  [col]
-  (-> col first vals first))
-
 (defn- todo-on
   "Get the todo hours on a particular day"
   [team sprint date]
-  (request-row "/Hist/Timebox"
-               {:asof (tostr-date date)
-                :sel (str "Workitems[Team.Name='" team "';AssetState!='Dead'].ToDo.@Sum")
-                :where (str "Name='" sprint \')}))
+  (first (request-rows "/Hist/Timebox"
+                       {:asof (tostr-date date)
+                        :sel (str "Workitems[Team.Name='" team "';AssetState!='Dead'].ToDo.@Sum")
+                        :where (str "Name='" sprint \')})))
 
 ;TODO: There is no need to get a burndown if we have the comparison? would have to manage data clientside though.
 (defn burndown
@@ -149,7 +143,6 @@
 (defn burndownComparison
   "Gets a table of the past 4 sprints burndowns"
   [team sprint]
-  (println "FOO" team sprint)
   (let [recent-sprints (->> (sprints team)
                             (take-to sprint)
                             (take-last 4)
@@ -454,7 +447,8 @@
                                      {:sel "ChangeDate,Estimate"
                                       :where (str "ChangeDate>'" since
                                                   "';Owners[Name='" member
-                                                  "'].@Count>'0';AssetState='Closed'&sort=ChangeDate")})))))
+                                                  "'].@Count>'0';AssetState='Closed'")
+                                      :sort "ChangeDate"})))))
   ([team sprint asset-type plural]
    (cons [plural]
          (request-rows (str "/Data/" asset-type)
@@ -487,7 +481,8 @@
                       {:sel "Name"
                        :where (str "Timebox.Name='" sprint
                                    "';Team.Name='" team
-                                   "';SplitTo;AssetState!='Dead'&sort=Name")})))
+                                   "';SplitTo;AssetState!='Dead'")
+                       :sort "Name"})))
 
 (defn- nest [data criteria]
   (if (empty? criteria)
@@ -528,6 +523,11 @@
                                        ";Timebox.EndDate<'" (tostr-date (time/plus now horizon))
                                        "';Timebox.EndDate>'" (tostr-date (time/minus now horizon)) \')})
     (roadmap-transform stories)))
+
+(defn- singular
+  "Get the value from a collection of one map with only one key"
+  [col]
+  (-> col first vals first))
 
 (defn feedback
   "Get the feedback for a retrospective"
@@ -628,8 +628,6 @@
         end (span "EndDate")]
     (map #(apply hash-map %) (map second (for-sprint team sprint begin end storys-on)))))
 
-(churn-data "TC+Sharks" "TC1313")
-
 (defn- diff [a b]
   (reduce dissoc a (keys b)))
 
@@ -651,8 +649,6 @@
         r (map #(cons (first %) (cons "Removed" (rest %))) removed)]
     (cons ["Date" "Action" "Story" "Title" "Points"]
           (concat a r))))
-
-(churnStories "TC+Sharks" "TC1313")
 
 (defn churn
   "The count of stories added to and removed from a sprint"
@@ -677,10 +673,10 @@
   [scope date]
   (let [count-open "Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count"
         count-total "Workitems:Defect[AssetState!='Dead'].@Count"]
-    (request-row "/Data/Scope"
-                 {:asof (tostr-date date)
-                  :sel (str count-open \, count-total)
-                  :where (str "AssetState!='Dead';Name='" scope \')})))
+    (first (request-rows "/Data/Scope"
+                         {:asof (tostr-date date)
+                          :sel (str count-open \, count-total)
+                          :where (str "AssetState!='Dead';Name='" scope \')}))))
 
 (defn defectRate
   "Open and total defects for the last 3 months for a project"

@@ -17,10 +17,15 @@
                 ["CSX" "SP" 1 4]]))))
 
 (facts "about services"
-       (fact (team-sprints) => truthy?)
-       (fact (todo-on "TC Sharks" "TC1315" (time/now)) => truthy?)
-       (fact (burndown "TC Sharks" "TC1313") => truthy?)
-       (fact (burndownComparison "TC Sharks" "TC1313") => truthy?))
+       (fact (team-sprints) => truthy)
+       (fact (current-sprints) => truthy)
+       (fact (todo-on "TC Sharks" "TC1315" (time/now)) => truthy)
+       (fact (burndown "TC Sharks" "TC1313") => truthy)
+       (fact (burndownComparison "TC Sharks" "TC1313") => truthy)
+       (fact (churn-data "TC+Sharks" "TC1313") => truthy)
+       (fact (churnStories "TC+Sharks" "TC1313") => truthy))
+
+
 
 
 

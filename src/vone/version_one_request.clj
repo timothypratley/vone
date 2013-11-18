@@ -40,7 +40,7 @@
       (catch Exception e
         ;TODO: treat 401 as an expected failure, no need to log
         ;... but do want to log other errors
-        (println "xhr failed (" (first (params :basic-auth)) \@ url \))
+        (println "xhr failed (" (first (params :basic-auth)) \@ url args \))
         (throw e)))))
 
 (defn xml-collapse
@@ -57,7 +57,7 @@
 (defn request
   "Makes an xml http request and collapses the body"
   ([query args]
-   (query args 0))
+   (request query args 0))
   ([query args not-found]
    (let [response (xhr query args)
          entities (xml-collapse (response :body) not-found)]
@@ -74,12 +74,5 @@
   [query args]
   (unmap (clojure.string/split (args :sel) #",")
          (request query args)))
-
-;TODO: do I need it?
-(defn request-row
-  "Get just a single row result"
-  [query args]
-  (first (request-rows)))
-
 
 

@@ -1,7 +1,15 @@
 (ns vone.scratch
   (:require [clojure.repl :refer :all]
-            [vone.views.services]))
+            [vone.views.services :refer :all]
+            [vone.version-one-request :refer :all]))
 
+(team-sprints)
+
+(sprint-span "TC1313")
+(#'vone.views.services/for-sprint "TC Sharks" "TC1313" #'vone.views.services/todo-on)
+(burndownComparison "TC Sharks" "TC1313")
+
+(current-sprints)
 
 (defn functions
   "Get the public functions of a namespace"
@@ -28,9 +36,6 @@
 (for [arglist (-> #'map meta :arglists)]
   (clojure.string/join "/" (map keyword arglist)))
 
-
-(println (name #'inc))
 (meta #'inc)
-(resolve nil)
 
 

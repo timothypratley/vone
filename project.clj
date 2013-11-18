@@ -16,7 +16,7 @@
             [lein-midje "3.0.0"]
             [lein-ring "0.8.6"]
             [lein-ancient "0.5.3"]]
-  :repositories {"local" ~(str (.toURI (java.io.File. "/repo")))}
+  ;:repositories {"local" ~(str (.toURI (java.io.File. "/repo")))}
   :ring {:handler vone.app-servlet/app-handler})
 
 
