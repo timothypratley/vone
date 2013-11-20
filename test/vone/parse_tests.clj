@@ -36,6 +36,7 @@
            (pprint (singular m))))
   )
 
+(comment
 (deftest test-empty-xml
     (let [x
 "<?xml version='1.0' encoding='UTF-8'?>
@@ -44,9 +45,12 @@
 <Attribute name=\"Workitems:PrimaryWorkitem[Team.Name='TC Sharks';Status.Name='Shelved'].Estimate[AssetState!='Dead'].@Sum\" /></Asset></History>"
           m (xml-collapse x 0)]
       (pprint m)))
+  )
 
 ;(deftest test-names
   ;(testing "Names can retrieve a list of statuses"
            ;(println (names "username" "password" "StoryStatus"))))
+
+
 
 

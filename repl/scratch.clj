@@ -1,7 +1,29 @@
 (ns vone.scratch
-  (:require [clojure.repl :refer :all]
+  (:require [clj-time.core :as time]
+            [clojure.repl :refer :all]
             [vone.views.services :refer :all]
+            [vone.helpers :refer :all]
             [vone.version-one-request :refer :all]))
+
+
+(map second (#'vone.views.services/for-sprint "TC Sharks" "TC1313"
+                                  (time/minus (time/now) (time/weeks 1))
+                                  (time/now)
+                                  #'vone.views.services/storys-on))
+(#'vone.views.services/churn-data "TC Sharks" "TC1313")
+
+(churnStories "TC Sharks" "TC1313")
+
+(let [team "TC Sharks"
+      sprint "TC1313"]
+  (as-url "/Hist/PrimaryWorkitem"
+          {:asof (tostr-date (time/now))
+           :sel "Number,Name,Estimate,ChangedBy"
+           :where (str "Timebox.Name='" sprint
+                       "';Team.Name='" team
+                       "';AssetState!='Dead'")}))
+
+(cumulative "TC Sharks" "TC1313")
 
 (team-sprints)
 
@@ -37,5 +59,7 @@
   (clojure.string/join "/" (map keyword arglist)))
 
 (meta #'inc)
+
+
 
 

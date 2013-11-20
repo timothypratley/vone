@@ -19,6 +19,8 @@
   (response/content-type "application/json; charset=utf-8"
                 (custom/generate-string content)))
 
-(println (json (org.joda.time.DateTime.)))
+#_(println (json (org.joda.time.DateTime.)))
+
+
 
 

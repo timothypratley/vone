@@ -15,8 +15,11 @@
   :plugins [[appengine-magic "0.5.0"]
             [lein-midje "3.0.0"]
             [lein-ring "0.8.6"]
-            [lein-ancient "0.5.3"]]
+            [lein-ancient "0.5.3"]
+            [lein-kibit "0.0.8"]]
   :ring {:handler vone.app-servlet/app-handler})
+
+
 
 
 

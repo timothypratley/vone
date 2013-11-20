@@ -13,7 +13,7 @@
 
 (defn- ratio
   [a b]
-  (if (zero? b)
+  (if (number? b)
     0
     (two-dec (/ a b))))
 
@@ -104,15 +104,14 @@
 (defn- days-for
   [begin end]
   (take-while #(time/before? % end)
-              (filter (complement weekend?)
-                      (inc-date-stream begin))))
+              (remove weekend? (inc-date-stream begin))))
 
 (defn- for-period
   [begin end f]
   (let [days (days-for begin (min-date (time/now) end))]
-     ;google app engine does not allow pmap,
-     ;so use regular map when deploying there
-     (map #(cons %1 %2) days (pmap f days))))
+    ;google app engine does not allow pmap,
+    ;so use regular map when deploying there
+    (transpose [days (pmap f days)])))
 
 (defn- for-sprint
   "Queries f for each sprint day"
@@ -125,13 +124,18 @@
   ([team sprint begin end f]
    (for-period begin end (partial f team sprint))))
 
+(defn- singular
+  "Get the value from a collection of one map with only one key"
+  [col]
+  (-> col first vals first))
+
 (defn- todo-on
   "Get the todo hours on a particular day"
   [team sprint date]
-  (first (request-rows "/Hist/Timebox"
-                       {:asof (tostr-date date)
-                        :sel (str "Workitems[Team.Name='" team "';AssetState!='Dead'].ToDo.@Sum")
-                        :where (str "Name='" sprint \')})))
+  (singular (request "/Hist/Timebox"
+                     {:asof (tostr-date date)
+                      :sel (str "Workitems[Team.Name='" team "';AssetState!='Dead'].ToDo.@Sum")
+                      :where (str "Name='" sprint \')})))
 
 ;TODO: There is no need to get a burndown if we have the comparison? would have to manage data clientside though.
 (defn burndown
@@ -156,24 +160,25 @@
   [m k v]
   (update-in m [k] (fnil + 0) v))
 
+(defn- sum-by-key [m entity]
+  (let [k (first entity)
+        ;TODO: is there a nicer way to deal with empty values?
+        k (if (number? k) "None" k)]
+    (map-add m k (second entity))))
+
 (defn- summize
   "Given a collection of pairs,
-   sums up seconds by making keys of first,
-   returning a map of the totals"
+  sums up seconds by making keys of first,
+  returning a map of the totals"
   [c]
-  (letfn [(sum-by-key [m entity]
-            (let [k (first entity)
-                  ;TODO: is there a nicer way to deal with empty values?
-                  k (if (zero? k) "None" k)]
-               (map-add m k (second entity))))]
-    (reduce sum-by-key (sorted-map) c)))
+  (reduce sum-by-key (sorted-map) c))
 
 (defn- cumulative-on
   [team sprint date]
-  (summize (request "/Hist/PrimaryWorkitem"
-                    {:asof (tostr-date date)
-                     :sel "Status.Name,Estimate"
-                     :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")})))
+  (summize (request-rows "/Hist/PrimaryWorkitem"
+                         {:asof (tostr-date date)
+                          :sel "Status.Name,Estimate"
+                          :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")})))
 
 (defn cumulative
   "Gets a table of the cumulative flow (story points by status per day)"
@@ -181,15 +186,18 @@
   (let [span (sprint-span sprint)
         begin (time/plus (span "BeginDate") (time/days 1))
         end (span "EndDate")
-        results (for-sprint team sprint begin end cumulative-on)
+        date-status-counts (for-sprint team sprint begin end cumulative-on)
+        status-counts (map second date-status-counts)
         statuses (reverse (names "StoryStatus" end))
         statuses (concat statuses
                          (clojure.set/difference
-                           (set (keys (apply merge results)))
-                           (set statuses)))
-        status-points (fn [m] (map #(get m % 0) statuses))]
+                          (set (keys (apply merge status-counts)))
+                          (set statuses)))
+        get-status-points (fn [m] (map #(get m % 0) statuses))]
     (cons (cons "Date" statuses)
-          (map status-points results))))
+          (map cons
+               (map first date-status-counts)
+               (map get-status-points status-counts)))))
 
 (defn cumulativePrevious
   "Gets a table of the previous sprint cumulative flow"
@@ -201,31 +209,31 @@
   "Gets a table of story points per customer"
   [team sprint]
   (cons ["Customer" "Story Points"]
-        (summize (request "/Data/PrimaryWorkitem"
-                          {:sel "Parent.Name,Estimate"
-                           :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")}))))
+        (summize (request-rows "/Data/PrimaryWorkitem"
+                               {:sel "Parent.Name,Estimate"
+                                :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")}))))
 
 (defn customersNext
   "Gets a table of story points per customer for the next sprint"
   [team sprint]
-  (if-let [next (first (take-after sprint (sprints team)))]
-    (customers team next)))
+  (if-let [next-sprint (first (take-after sprint (sprints team)))]
+    (customers team next-sprint)))
 
 ;TODO: query team instead, don't get people not in the team
 (defn- participants-all
   [team sprint]
-  (set (remove zero? (flatten (request-rows "/Data/Workitem"
+  (set (remove number? (flatten (request-rows "/Data/Workitem"
                                               {:sel "Owners.Name"
-                                               :where "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'"})))))
+                                               :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")})))))
 
 (defn- map-add-estimates
   [m estimate-owners]
   (let [estimate (first estimate-owners)
         owners (second estimate-owners)]
     ; TODO: nil is replaced by 0 when there are no owners
-    (if (not (zero? owners))
-      (reduce #(map-add %1 %2 estimate) m owners)
-      m)))
+    (if (number? owners)
+      m
+      (reduce #(map-add %1 %2 estimate) m owners))))
 
 (defn- map-add-hours
   [m owner-hours]
@@ -255,7 +263,7 @@
         owners (second estimate-owners)
         sprint (last estimate-owners)]
     ; TODO: nil is replaced by 0 when there are no owners
-    (if (or (zero? owners) (zero? sprint))
+    (if (or (number? owners) (number? sprint))
       m
       (reduce #(update-in %1 [%2 sprint] (fnil + 0) estimate)
               m owners))))
@@ -268,10 +276,10 @@
                                                         :where "AssetState!='Dead'"}))]
     (cons ["Member" "Sprint" "Points"]
           (apply concat
-            (for [member (apply sorted-set (keys points))]
-              (let [sprints (points member)]
-                (for [sprint (apply sorted-set (keys sprints))]
-                  [member sprint (get sprints sprint 0)])))))))
+                 (for [member (apply sorted-set (keys points))]
+                   (let [sprints (points member)]
+                     (for [sprint (apply sorted-set (keys sprints))]
+                       [member sprint (get sprints sprint 0)])))))))
 
 (defn- check-estimate
   [story]
@@ -355,11 +363,11 @@
 (defn- with-capacity
   [team estimates]
   (for [stats estimates]
-    (if (zero? (last stats))
+    (if (number? (last stats))
       ;replace capacity with hoursXdaysXpeople for sprint
       (concat (drop-last stats)
               [(* 5 14 (count (participants-all
-                                team (first stats))))])
+                               team (first stats))))])
       stats)))
 
 (defn- with-ratios
@@ -385,31 +393,31 @@
         estimates (with-ratios estimates)]
     (if (not-empty estimates)
       (transpose
-        (cons ["Sprint"
-               "Points"
-               "Referenced"
-               "Stories"
-               "Defects"
-               "Test Sets"
-               "Tests"
-               "Estimated"
-               "Done"
-               "Capacity"
-               "Accuracy (Estimate/Done)"
-               "Efficiency (Done/Capacity)"
-               "Referenced ratio"]
-              estimates)))))
+       (cons ["Sprint"
+              "Points"
+              "Referenced"
+              "Stories"
+              "Defects"
+              "Test Sets"
+              "Tests"
+              "Estimated"
+              "Done"
+              "Capacity"
+              "Accuracy (Estimate/Done)"
+              "Efficiency (Done/Capacity)"
+              "Referenced ratio"]
+             estimates)))))
 
 ;from incanter
 (defn- cumulative-sum
   " Returns a sequence of cumulative sum for the given collection. For instance
-    The first value equals the first value of the argument, the second value is
-    the sum of the first two arguments, the third is the sum of the first three
-    arguments, etc.
+  The first value equals the first value of the argument, the second value is
+  the sum of the first two arguments, the third is the sum of the first three
+  arguments, etc.
 
-    Examples:
-      (use 'incanter.core)
-      (cumulative-sum (range 100))
+  Examples:
+  (use 'incanter.core)
+  (cumulative-sum (range 100))
   "
   ([coll]
    (loop [in-coll (rest coll)
@@ -423,7 +431,7 @@
 (defn- accumulate
   [s]
   (reduce #(assoc %1 (first %2) (second %2)) (sorted-map)
-         (map list (map first s) (cumulative-sum (map second s)))))
+          (map list (map first s) (cumulative-sum (map second s)))))
 
 (defn- workitems
   ([]
@@ -488,7 +496,7 @@
   (if (empty? criteria)
     data
     (into {} (for [[k v] (group-by #(nth % (first criteria)) data)]
-      (hash-map k (nest v (rest criteria)))))))
+               (hash-map k (nest v (rest criteria)))))))
 
 (defn- group
   [m k v]
@@ -504,30 +512,25 @@
         projects (nest result [0 1 2 3])]
     ; sparse matrix dates take up a lot of text, so send full matrix
     (cons (apply vector "Project" "Customer" "Team" header)
-      (apply concat
-        (for [[project customers] projects]
           (apply concat
-            (for [[customer teams] customers]
-              (for [[team dates] teams]
-                (apply vector project customer team
-                       (map (comp (fnil last [0]) last dates) header))))))))))
+                 (for [[project customers] projects]
+                   (apply concat
+                          (for [[customer teams] customers]
+                            (for [[team dates] teams]
+                              (apply vector project customer team
+                                     (map (comp (fnil last [0]) last dates) header))))))))))
 
 (defn roadmap
   "Get the projected work"
   []
   (let [horizon (time/months 4)
-        now (time/now)]
-    stories (request-rows "/Data/PrimaryWorkitem"
-                          {:sel "Scope.Name,Parent.Name,Team.Name,Timebox.EndDate,Estimate"
-                           :where (str "Estimate;Team.Name"
-                                       ";Timebox.EndDate<'" (tostr-date (time/plus now horizon))
-                                       "';Timebox.EndDate>'" (tostr-date (time/minus now horizon)) \')})
+        now (time/now)
+        stories (request-rows "/Data/PrimaryWorkitem"
+                              {:sel "Scope.Name,Parent.Name,Team.Name,Timebox.EndDate,Estimate"
+                               :where (str "Estimate;Team.Name"
+                                           ";Timebox.EndDate<'" (tostr-date (time/plus now horizon))
+                                           "';Timebox.EndDate>'" (tostr-date (time/minus now horizon)) \')})]
     (roadmap-transform stories)))
-
-(defn- singular
-  "Get the value from a collection of one map with only one key"
-  [col]
-  (-> col first vals first))
 
 (defn feedback
   "Get the feedback for a retrospective"
@@ -554,19 +557,18 @@
                               {:sel "Name,DefaultRole.Name,DefaultRole.Order,MemberLabels.Name"
                                :where "AssetState!='Dead'"})))
 
-(defn transform-effort
+(defn- transform-effort
   [s]
   (map #(clojure.set/rename-keys % {"Value" :hours}) s))
 
 (defn effort
   []
   (transform-effort (request "/Data/Actual"
-                             {:sel "Name,Value"
-                              :where "AssetState!='Dead'"})))
+                             {:sel "Member.Name,Value"})))
 
 ; TODO
 #_(defn allocation
-  [])
+    [])
 
 (defn- compress
   [xs]
@@ -616,7 +618,7 @@
             (map #(cons (readable-date date) %)
                  (request-rows "/Hist/PrimaryWorkitem"
                                {:asof (tostr-date date)
-                                :sel "Number,Name,Estimate"
+                                :sel "Number,Name,Estimate,ChangedBy.Name"
                                 :where (str "Timebox.Name='" sprint
                                             "';Team.Name='" team
                                             "';AssetState!='Dead'")}))))
@@ -626,7 +628,7 @@
   (let [span (sprint-span sprint)
         begin (time/plus (span "BeginDate") (time/days 1))
         end (span "EndDate")]
-    (map #(apply hash-map %) (map second (for-sprint team sprint begin end storys-on)))))
+    (map second (for-sprint team sprint begin end storys-on))))
 
 (defn- diff [a b]
   (reduce dissoc a (keys b)))
@@ -647,7 +649,7 @@
         ; TODO refactor insert
         a (map #(cons (first %) (cons "Added" (rest %))) added)
         r (map #(cons (first %) (cons "Removed" (rest %))) removed)]
-    (cons ["Date" "Action" "Story" "Title" "Points"]
+    (cons ["Date" "Action" "Story" "Title" "Points" "Changed By"]
           (concat a r))))
 
 (defn churn
@@ -664,8 +666,8 @@
   "Gets a table of the past 4 sprints' churn"
   [team sprint]
   (let [s (->> (sprints team)
-            (take-to sprint)
-            (take-last 5))]
+               (take-to sprint)
+               (take-last 5))]
     (cons ["Sprint" "Added" "Removed"]
           (map #(churn team %) s))))
 
@@ -673,10 +675,10 @@
   [scope date]
   (let [count-open "Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count"
         count-total "Workitems:Defect[AssetState!='Dead'].@Count"]
-    (first (request-rows "/Data/Scope"
-                         {:asof (tostr-date date)
-                          :sel (str count-open \, count-total)
-                          :where (str "AssetState!='Dead';Name='" scope \')}))))
+    (singular (request "/Data/Scope"
+                       {:asof (tostr-date date)
+                        :sel (str count-open \, count-total)
+                        :where (str "AssetState!='Dead';Name='" scope \')}))))
 
 (defn defectRate
   "Open and total defects for the last 3 months for a project"
@@ -697,5 +699,7 @@
                           :where (str "AssetState!='Dead';"
                                       "Workitems:PrimaryWorkitem[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'0'")
                           :sort "Name"})))
+
+
 
 
