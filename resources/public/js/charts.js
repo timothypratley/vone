@@ -79,6 +79,8 @@ angular.module('charts', [])
   defects: {
     visualization: "Table",
     title: "Defects",
+    vAxis: {title: "Date"},
+    hAxis: {title: "Defect Count", minValue: 0},
     allowHtml: true,
     height: null
   },
@@ -239,6 +241,10 @@ angular.module('charts', [])
     .error($log.error);
   };
 });
+
+
+
+
 
 
 

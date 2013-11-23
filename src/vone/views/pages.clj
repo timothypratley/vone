@@ -134,7 +134,7 @@
 
 (defn retro []
   (html
-   [:h1 "Retrospective: {{sprintBegin}} {{sprintEnd}}"]
+   [:h1 "Retrospective: {{sprintBegin}} to {{sprintEnd}}"]
    select-retro
    [:hr]
    [:div.report {:ng-visible "team && sprint"}
@@ -223,5 +223,7 @@
       [:hr]
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
+
+
 
 

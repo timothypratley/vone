@@ -1,6 +1,8 @@
 (ns vone.helpers
    (:require [clj-time.format :as format]
-             [clj-time.core :as time]))
+             [clj-time.core :as time]
+             [clj-time.coerce :as coerce]
+             [clj-time.local :as local]))
 
 
 (defmacro spy
@@ -35,10 +37,11 @@
   [#^org.joda.time.DateTime ds]
   (> (.get (.dayOfWeek ds)) 5))
 (defn min-date
-  [#^org.joda.time.DateTime dsa #^org.joda.time.DateTime dsb]
-  (if (time/before? dsa dsb)
-    dsa
-    dsb))
+  [dsa, dsb]
+  (coerce/to-local-date
+   (if (time/before? (coerce/to-date-time dsa) (coerce/to-date-time dsb))
+     dsa
+     dsb)))
 
 (defn parse-date
   [date]
@@ -63,10 +66,6 @@
     (catch Exception e
       nil)))
 
-(defn tostr-date
-  [date]
-  (format/unparse (format/formatter "yyyy-MM-dd'T23:59:59'") date))
-
 (defn tostr-ds-date
   "converts a joda time into a javascript zero based month date"
   [date]
@@ -74,14 +73,23 @@
 
 (defn readable-date
   [date]
-  (format/unparse (if (= (time/year date) (time/year (time/now)))
-                    (format/formatter "MMM dd")
-                    (format/formatter "MMM dd yyyy"))
-                    date))
+  (try
+    (format/unparse (if (= (time/year date) (time/year (time/now)))
+                      (format/formatter "MMM dd")
+                      (format/formatter "MMM dd yyyy"))
+                    date)
+    (catch Exception e
+      date)))
 
 (defn basic-date
   [date]
   (format/unparse (format/formatters :basic-date) date))
+
+(defn vone-date
+  [date]
+  (str (coerce/to-local-date date) "T23:59:59"))
+
+
 
 
 

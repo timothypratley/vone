@@ -2,6 +2,7 @@
   (:require [vone.version-one-request :refer :all]
             [vone.helpers :refer :all]
             [clj-time.core :as time]
+            [clj-time.coerce :as coerce]
             [hiccup.core :refer [html]]))
 
 
@@ -10,12 +11,6 @@
 (defn- two-dec
   [d]
   (/ (Math/round (* 100.0 d)) 100.0))
-
-(defn- ratio
-  [a b]
-  (if (number? b)
-    0
-    (two-dec (/ a b))))
 
 (defn sprint-span
   [sprint]
@@ -30,7 +25,7 @@
                           {:sel "Name"})))
   ([asset asof]
    (flatten (request-rows (str "/Hist/" asset)
-                          {:asof (tostr-date asof)
+                          {:asof (vone-date asof)
                            :sel "Name"
                            :where "Description;AssetState!='Dead'"
                            :sort "Order"}))))
@@ -55,13 +50,12 @@
 (defn current-sprints
   "Retrieves current sprints"
   []
-  (let [now-str (tostr-date (time/now))]
-    (flatten (request-rows "/Data/Timebox"
-                           {:sel "Name"
-                            :where (str "EndDate>='" now-str
-                                        "';BeginDate<'" now-str
-                                        "';AssetState!='Dead'")
-                            :sort "Name"}))))
+  (flatten (request-rows "/Data/Timebox"
+                         {:sel "Name"
+                          :where (str "EndDate>='" (time/today)
+                                      "';BeginDate<'" (time/today)
+                                      "';AssetState!='Dead'")
+                          :sort "Name"})))
 
 ;TODO: this is getting called multiple times, it doesn't need to be
 (defn- velocity-all
@@ -103,26 +97,26 @@
 
 (defn- days-for
   [begin end]
-  (take-while #(time/before? % end)
+  (take-while #(not (time/after? % (coerce/to-date-time end)))
               (remove weekend? (inc-date-stream begin))))
 
 (defn- for-period
   [begin end f]
-  (let [days (days-for begin (min-date (time/now) end))]
+  (let [days (days-for begin end)]
     ;google app engine does not allow pmap,
     ;so use regular map when deploying there
-    (transpose [days (pmap f days)])))
+    (pmap f days)))
 
 (defn- for-sprint
   "Queries f for each sprint day"
   ([team sprint f]
    (let [span (sprint-span sprint)
          begin (time/plus (span "BeginDate") (time/days 1))
-         end (span "EndDate")]
+         end (time/minus (span "EndDate") (time/days 1))]
      ;(println "TEAM:" team " SPRINT:" sprint " START:" begin "  END:" end)
      (for-sprint team sprint begin end f)))
   ([team sprint begin end f]
-   (for-period begin end (partial f team sprint))))
+   (for-period begin (min-date (time/today) end) (partial f team sprint))))
 
 (defn- singular
   "Get the value from a collection of one map with only one key"
@@ -131,9 +125,9 @@
 
 (defn- todo-on
   "Get the todo hours on a particular day"
-  [team sprint date]
+  [team sprint asof]
   (singular (request "/Hist/Timebox"
-                     {:asof (tostr-date date)
+                     {:asof (vone-date asof)
                       :sel (str "Workitems[Team.Name='" team "';AssetState!='Dead'].ToDo.@Sum")
                       :where (str "Name='" sprint \')})))
 
@@ -142,7 +136,9 @@
   "Gets a table of todo hours per day"
   [team sprint]
   (cons ["Date" "ToDo"]
-        (for-sprint team sprint todo-on)))
+        (map vector
+             (iterate inc 1)
+             (for-sprint team sprint todo-on))))
 
 (defn burndownComparison
   "Gets a table of the past 4 sprints burndowns"
@@ -154,7 +150,9 @@
         sprint-todos (pmap #(for-sprint team % todo-on) recent-sprints)]
     (if (not-empty recent-sprints)
       (cons (cons "Date" recent-sprints)
-            (apply map list (map first (first sprint-todos)) (map #(map second %) sprint-todos))))))
+            (apply map vector
+                   (iterate inc 1)
+                   sprint-todos)))))
 
 (defn- map-add
   [m k v]
@@ -174,9 +172,9 @@
   (reduce sum-by-key (sorted-map) c))
 
 (defn- cumulative-on
-  [team sprint date]
+  [team sprint asof]
   (summize (request-rows "/Hist/PrimaryWorkitem"
-                         {:asof (tostr-date date)
+                         {:asof (vone-date asof)
                           :sel "Status.Name,Estimate"
                           :where (str "Timebox.Name='" sprint "';Team.Name='" team "';AssetState!='Dead'")})))
 
@@ -184,19 +182,18 @@
   "Gets a table of the cumulative flow (story points by status per day)"
   [team sprint]
   (let [span (sprint-span sprint)
-        begin (time/plus (span "BeginDate") (time/days 1))
-        end (span "EndDate")
-        date-status-counts (for-sprint team sprint begin end cumulative-on)
-        status-counts (map second date-status-counts)
+        end (time/minus (span "EndDate") (time/days 1))
+        status-counts (for-sprint team sprint cumulative-on)
         statuses (reverse (names "StoryStatus" end))
         statuses (concat statuses
                          (clojure.set/difference
                           (set (keys (apply merge status-counts)))
                           (set statuses)))
-        get-status-points (fn [m] (map #(get m % 0) statuses))]
+        get-status-points (fn [m] (map #(get m % 0) statuses))
+        days (iterate inc 1)]
     (cons (cons "Date" statuses)
           (map cons
-               (map first date-status-counts)
+               days
                (map get-status-points status-counts)))))
 
 (defn cumulativePrevious
@@ -370,6 +367,12 @@
                                team (first stats))))])
       stats)))
 
+(defn- ratio
+  [a b]
+  (if (zero? b)
+    0
+    (two-dec (/ a b))))
+
 (defn- with-ratios
   [estimates]
   (for [stats estimates]
@@ -431,16 +434,16 @@
 (defn- accumulate
   [s]
   (reduce #(assoc %1 (first %2) (second %2)) (sorted-map)
-          (map list (map first s) (cumulative-sum (map second s)))))
+          (map vector (map first s) (cumulative-sum (map second s)))))
 
 (defn- workitems
   ([]
    (let [horizon (time/years 1)
-         now (time/now)
+         start (time/minus (time/today) horizon)
          result (request-rows "/Data/PrimaryWorkitems"
                               {:sel "Owners.Name,Estimate"
                                :where (str "Owners[AssetState!='Dead'].@Count>'0';ChangeDate>'"
-                                           (tostr-date (time/minus now horizon)) "';AssetState='Closed'")})]
+                                           (vone-date start) "';AssetState='Closed'")})]
      (map #(list (first %) (two-dec (second %)))
           (reduce (fn [m owners-estimate]
                     (let [names (first owners-estimate)
@@ -449,7 +452,7 @@
                   (sorted-map) result))))
   ([member asset-type]
    (let [horizon (time/years 1)
-         since (tostr-date (time/minus (time/now) horizon))]
+         since (time/minus (time/today) horizon)]
      (cons ["ChangeDate" "Estimate"]
            (accumulate (request-rows (str "/Data/" asset-type)
                                      {:sel "ChangeDate,Estimate"
@@ -511,7 +514,7 @@
         result (map #(conj (first %) (two-dec (second %))) result)
         projects (nest result [0 1 2 3])]
     ; sparse matrix dates take up a lot of text, so send full matrix
-    (cons (apply vector "Project" "Customer" "Team" header)
+    (cons (apply vector "Project" "Customer" "Team" (map readable-date header))
           (apply concat
                  (for [[project customers] projects]
                    (apply concat
@@ -524,12 +527,13 @@
   "Get the projected work"
   []
   (let [horizon (time/months 4)
-        now (time/now)
+        start (time/minus (time/today) horizon)
+        end (time/plus (time/today) horizon)
         stories (request-rows "/Data/PrimaryWorkitem"
                               {:sel "Scope.Name,Parent.Name,Team.Name,Timebox.EndDate,Estimate"
                                :where (str "Estimate;Team.Name"
-                                           ";Timebox.EndDate<'" (tostr-date (time/plus now horizon))
-                                           "';Timebox.EndDate>'" (tostr-date (time/minus now horizon)) \')})]
+                                           ";Timebox.EndDate>'" (vone-date start)
+                                           "';Timebox.EndDate<'" (vone-date end) \')})]
     (roadmap-transform stories)))
 
 (defn feedback
@@ -598,8 +602,7 @@
   (let [sprints (failed-review-all team)
         c (count-to sprint (map first sprints))]
     (cons ["Sprint" "Failed Review"]
-          (take-last 5
-                     (take c sprints)))))
+          (take-last 5 (take c sprints)))))
 
 (defn- count-added-after-start
   [s]
@@ -613,11 +616,11 @@
 
 
 (defn- storys-on
-  [team sprint date]
+  [team sprint asof]
   (group-by second
-            (map #(cons (readable-date date) %)
+            (map #(cons asof %)
                  (request-rows "/Hist/PrimaryWorkitem"
-                               {:asof (tostr-date date)
+                               {:asof (vone-date asof)
                                 :sel "Number,Name,Estimate,ChangedBy.Name"
                                 :where (str "Timebox.Name='" sprint
                                             "';Team.Name='" team
@@ -628,12 +631,10 @@
   (let [span (sprint-span sprint)
         begin (time/plus (span "BeginDate") (time/days 1))
         end (span "EndDate")]
-    (map second (for-sprint team sprint begin end storys-on))))
+    (for-sprint team sprint begin end storys-on)))
 
 (defn- diff [a b]
   (reduce dissoc a (keys b)))
-
-;(fact (diff {:a 1 :b 2} {:b 3}) => {:a 1})
 
 (defn- collect [as bs]
   (let [diffs (map first (vals (reduce merge (map diff as bs))))
@@ -648,9 +649,10 @@
         removed (collect stories (rest stories))
         ; TODO refactor insert
         a (map #(cons (first %) (cons "Added" (rest %))) added)
-        r (map #(cons (first %) (cons "Removed" (rest %))) removed)]
-    (cons ["Date" "Action" "Story" "Title" "Points" "Changed By"]
-          (concat a r))))
+        r (map #(cons (time/plus (first %) (time/days 1)) (cons "Removed" (rest %))) removed)]
+    (cons ["Date" "Action" "Story" "Title" "Points" "By"]
+          (map #(update-in (vec %) [0] readable-date)
+               (sort-by first (concat a r))))))
 
 (defn churn
   "The count of stories added to and removed from a sprint"
@@ -672,24 +674,26 @@
           (map #(churn team %) s))))
 
 (defn- defect-rate-on
-  [scope date]
+  [scope asof]
   (let [count-open "Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count"
         count-total "Workitems:Defect[AssetState!='Dead'].@Count"]
-    (singular (request "/Data/Scope"
-                       {:asof (tostr-date date)
-                        :sel (str count-open \, count-total)
-                        :where (str "AssetState!='Dead';Name='" scope \')}))))
+    (first (request-rows "/Data/Scope"
+                         {:asof (vone-date asof)
+                          :sel (str count-open \, count-total)
+                          :where (str "AssetState!='Dead';Name='" scope \')}))))
 
 (defn defectRate
   "Open and total defects for the last 3 months for a project"
   ([scope]
-   (let [now (time/now)
-         horizon (time/months 3)]
-     (defectRate scope (time/minus now horizon) now)))
+   (let [horizon (time/months 3)
+         end (time/now)
+         begin (time/minus end horizon)]
+     (defectRate scope begin end)))
   ([scope begin end]
-   (let [counts (for-period begin end (partial defect-rate-on scope))]
-     (cons ["Day" "Open" "Total"]
-           (map cons (days-for begin end) counts)))))
+   (cons ["Day" "Open" "Total"]
+         (map cons
+              (days-for begin end)
+              (for-period begin end (partial defect-rate-on scope))))))
 
 (defn projects
   "Retrieves projects with open workitems"
