@@ -1,7 +1,6 @@
 angular.module('charts', [])
 .value('options', {
   general: {
-    width: 1000,
     height: 500,
     allowHtml: true
   },
@@ -241,6 +240,8 @@ angular.module('charts', [])
     .error($log.error);
   };
 });
+
+
 
 
 

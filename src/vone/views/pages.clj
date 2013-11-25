@@ -30,42 +30,59 @@
    [:head
     ; When run on an intranet, IE defaults to compatibility
     ; which does not work for Google Visualization library
-    [:meta {:http-equiv "X-UA-Compatible" :content "IE=edge,chrome=1"}]
-    [:title "vone"]
+    [:title "Vone: Version One Custom Reporting"]
+    [:meta {:http-equiv "X-UA-Compatible"
+            :content "IE=edge,chrome=1"}]
+    [:meta {:name "viewport"
+            :content "width=device-width,initial-scale=1.0"}]
     [:link {:rel "icon"
             :href "img/favicon.ico"
             :type "image/x-icon"}]
     [:link {:rel "shortcut"
             :href "img/favicon.ico"
             :type "image/x-icon"}]
-    (include-css "/css/bootstrap.min.css")
-    (include-css "/css/vone.css")]
+    (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css")
+    (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap-theme.min.css")
+    (include-css "/css/vone.css")
+    "<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src='//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js'></script>
+    <script src='//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js'></script>
+    <![endif]-->"]
 
    [:body {:authenticate "loginbox"}
-    [:header.navbar
-     [:div.navbar-inner
-      [:a.brand {:href "#/"} [:strong "Vone"]]
-      [:ul.nav
-       [:li.divider-vertical]
-       [:li (link-to "/#/" "Home")]
-       [:li.divider-vertical]
-       [:li (link-to "/#/retro" "Retrospective")]
-       [:li.divider-vertical]
-       [:li (link-to "/#/roadmap" "Roadmap")]
-       [:li.divider-vertical]
-       [:li (link-to "/#/fabel" "Fabel")]
-       [:li.divider-vertical]
-       [:li (link-to "/#/allteams" "All Teams")]
-       [:li.divider-vertical]
-       [:li (link-to "/#/projectdefectrate" "Project Defect Rate")]
-       [:li.divider-vertical]
-       [:li (link-to "/#/overall" "Overall")]
-       [:li.divider-vertical]]
-      [:div.login.ng-cloak.pull-right {:ng-show "!username"}
-       (link-to "/#/login" "Login")]
-      [:div.logout.ng-cloak.pull-right {:ng-show "username"}
-       [:span "{{username}}"]
-       (submit-button {:ng-click "logout()"} "logout")]]]
+    [:div.container
+     [:header.navbar.navbar-default {:role "banner"}
+      [:div.navbar-header
+       [:button.navbar-toggle {:type "button"
+                               :data-toggle "collapse"
+                               :data-target ".navbar-collapse"}
+        [:span.sr-only "Toggle navigation"]
+        [:span.icon-bar]]
+       [:a.navbar-brand {:href "#"} "Vone"]]
+      [:div.collapse.navbar-collapse {:role "navigation"}
+       [:ul.nav.navbar-nav
+        ;TODO: use angular to set the active menu
+        [:li.divider-vertical]
+        [:li (link-to "#/retro" "Retrospective")]
+        [:li.divider-vertical]
+        [:li (link-to "#/roadmap" "Roadmap")]
+        [:li.divider-vertical]
+        [:li (link-to "#/fabel" "Fabel")]
+        [:li.divider-vertical]
+        [:li (link-to "#/allteams" "All Teams")]
+        [:li.divider-vertical]
+        [:li (link-to "#/projectdefectrate" "Project Defect Rate")]
+        [:li.divider-vertical]
+        [:li (link-to "#/overall" "Overall")]
+        [:li.divider-vertical]]
+       [:ul.nav.navbar-nav.navbar-right.ng-cloak
+        [:li.login {:ng-show "!username"}
+         (link-to "/#/login" "Login")]
+        [:li.logout {:ng-show "username"}
+         [:span "{{username}}"]
+         (submit-button {:ng-click "logout()"} "logout")]]]]]
 
     [:div#loginbox.modal.hide.fade {:tabindex -1
                                     :role "dialog"
@@ -84,24 +101,23 @@
        (submit-button "VersionOne Login")]]]
     ;TODO: should have a modal-footer with submit, but then no form?
 
-    [:div#content.ng-view "Loading..."]
-    (include-js "/js/jquery-1.8.2.min.js")
-    (include-js "https://www.google.com/jsapi")
-    (include-js "http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js")
-    (include-js "/js/angular-1.0.1.min.js")
-    (include-js "/js/angular-resource-1.0.1.min.js")
+    [:div.container.content
+     [:div#content.ng-view "Loading..."]]
+
+    (include-js "//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js")
+    (include-js "//www.google.com/jsapi")
+    (include-js "//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js")
+    (include-js "//ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js")
+    (include-js "//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js")
     (include-js "/js/http-auth-interceptor.js")
-    (include-js "/js/bootstrap.min.js")
     (include-js "/js/charts.js")
     (include-js "/js/controllers.js")
     (include-js "/js/vone.js")]))
 
 (defn about []
   (html
-   [:h1 "VersionOne Reporting"]
-   [:ul
-    [:li (link-to "/#/login" "Login")]
-    [:li (link-to "/#/retro" "Retrospective")]]))
+   [:h1 "VersionOne Custom Reporting"]
+   [:div "Choose a report from the navbar above."]))
 
 (defn burndown []
   (html
@@ -167,8 +183,9 @@
      [:li {:ng-repeat "args in argss"}
       [:hr]
       [:h2 "{{args}}"]
-      [:div {:chart "burndown" :width 600 :height 300 :style "float:left;"}]
-      [:div {:chart "cumulative" :width 600 :height 300 :style "margin-left:610px;"}]
+      [:div.row
+       [:div.col-md-6 {:chart "burndown" :height 320}]
+       [:div.col-md-6 {:chart "cumulative" :height 320}]]
       [:div {:chart "churnStories"}]]]]))
 
 (defn roadmap []
@@ -223,6 +240,10 @@
       [:hr]
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
+
+
+
+
 
 
 
