@@ -533,7 +533,8 @@
                               {:sel "Scope.Name,Parent.Name,Team.Name,Timebox.EndDate,Estimate"
                                :where (str "Estimate;Team.Name"
                                            ";Timebox.EndDate>'" (vone-date start)
-                                           "';Timebox.EndDate<'" (vone-date end) \')})]
+                                           "';Timebox.EndDate<'" (vone-date end) \')}
+                              "None")]
     (roadmap-transform stories)))
 
 (defn feedback
@@ -696,14 +697,13 @@
               (for-period begin end (partial defect-rate-on scope))))))
 
 (defn projects
-  "Retrieves projects with open workitems"
+  "Retrieves projects with at least one open defect, and ten closed defects"
   []
   (flatten (request-rows "/Data/Scope"
                          {:sel "Name"
-                          :where (str "AssetState!='Dead';"
-                                      "Workitems:PrimaryWorkitem[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'0'")
+                          :where (str "AssetState!='Dead'"
+                                      ";Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'10'"
+                                      ";Workitems:Defect[AssetState!='Dead'].@Count>'100'")
                           :sort "Name"})))
-
-
 
 

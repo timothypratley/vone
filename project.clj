@@ -17,19 +17,7 @@
             [lein-ring "0.8.6"]
             [lein-ancient "0.5.3"]
             [lein-kibit "0.0.8"]]
-  :ring {:handler vone.app-servlet/app-handler})
-
-
-
-
-
-
-
-
-
-
-
-
-
+  :ring {:handler vone.app-servlet/app-handler
+         :reload-paths ["src"]})
 
 

@@ -64,19 +64,13 @@
       [:div.collapse.navbar-collapse {:role "navigation"}
        [:ul.nav.navbar-nav
         ;TODO: use angular to set the active menu
-        [:li.divider-vertical]
         [:li (link-to "#/retro" "Retrospective")]
-        [:li.divider-vertical]
         [:li (link-to "#/roadmap" "Roadmap")]
-        [:li.divider-vertical]
         [:li (link-to "#/fabel" "Fabel")]
-        [:li.divider-vertical]
         [:li (link-to "#/allteams" "All Teams")]
-        [:li.divider-vertical]
         [:li (link-to "#/projectdefectrate" "Project Defect Rate")]
-        [:li.divider-vertical]
-        [:li (link-to "#/overall" "Overall")]
-        [:li.divider-vertical]]
+        ;[:li (link-to "#/overall" "Overall")]
+        ]
        [:ul.nav.navbar-nav.navbar-right.ng-cloak
         [:li.login {:ng-show "!username"}
          (link-to "/#/login" "Login")]
@@ -116,8 +110,7 @@
 
 (defn about []
   (html
-   [:h1 "VersionOne Custom Reporting"]
-   [:div "Choose a report from the navbar above."]))
+   [:div "Please select a report from the navbar above."]))
 
 (defn burndown []
   (html
@@ -179,9 +172,10 @@
   (html
    [:h1 "All Teams Status: {{today}}"]
    [:div.report
-    [:ul
+    [:ul.list-unstyled
      [:li {:ng-repeat "args in argss"}
-      [:hr]
+      [:br]
+      [:br]
       [:h2 "{{args}}"]
       [:div.row
        [:div.col-md-6 {:chart "burndown" :height 320}]
@@ -191,9 +185,9 @@
 (defn roadmap []
   (html
    [:h1 "Roadmap"]
+   [:label.checkbox (check-box {:ng-model "showTeam"} "team") "Team"]
    [:label.checkbox (check-box {:ng-model "showProject"} "project") "Project"]
    [:label.checkbox (check-box {:ng-model "showCustomer"} "customer") "Customer"]
-   [:label.checkbox (check-box {:ng-model "showTeam"} "team") "Team"]
    (link-to "/csv/roadmap" "csv")
    [:div {:roadmap true}]))
 
@@ -235,11 +229,13 @@
   (html
    [:h1 "Defect Rate: {{today}}"]
    [:div.report
-    [:ul
+    [:ul.list-unstyled
      [:li {:ng-repeat "args in projects"}
       [:hr]
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
+
+
 
 
 

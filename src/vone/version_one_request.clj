@@ -71,9 +71,11 @@
 
 (defn request-rows
   "Get rows of values with columns in the order you specified"
-  [query args]
-  (unmap (clojure.string/split (args :sel) #",")
-         (request query args)))
+  ([query args]
+   (request-rows query args 0))
+  ([query args not-found]
+   (unmap (clojure.string/split (args :sel) #",")
+          (request query args not-found))))
 
 (defn as-url
   [query args]
