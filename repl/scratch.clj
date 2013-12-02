@@ -13,7 +13,7 @@
                                   #'vone.views.services/storys-on))
 (#'vone.views.services/churn-data "TC Sharks" "TC1313")
 
-(churnStories "TC Sharks" "TC1313")
+(churnStories "TC Sharks" "TC1316")
 
 (let [team "TC Sharks"
       sprint "TC1313"]
@@ -61,11 +61,5 @@
   (clojure.string/join "/" (map keyword arglist)))
 
 (meta #'inc)
-
-
-
-
-
-
 
 

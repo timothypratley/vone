@@ -643,25 +643,35 @@
         hist (clojure.string/join ", " (cons init (map what y (rest y))))]
     hist))
 
-(defn- storys-on
+(defn- index
+  [sm k]
+  (reduce #(assoc %1 (%2 k) %2) {} sm))
+;(fact (index [{:a :A, :b 2} {:a :B :b 3}] :a)
+;      => {:A {:a :A, :b 2} :B {:a :B, :b 3}})
+
+(defn- stories-on
   [team sprint asof]
-  (request "/Hist/PrimaryWorkitem"
-           {:asof (vone-date asof)
-            :sel "ChangeDate,ChangedBy.Name,Number,Name,Timebox.Name,Team.Name,Estimate,AssetState"
-            :where (str "Timebox.Name='" sprint
-                        "';Team.Name='" team
-                        "';AssetState!='Dead'")}))
+  (index
+   (request "/Hist/PrimaryWorkitem"
+            {:asof (vone-date asof)
+             :sel "ChangeDate,ChangedBy.Name,Number,Name,Timebox.Name,Team.Name,Estimate,AssetState"
+             :where (str "Timebox.Name='" sprint
+                         "';Team.Name='" team
+                         "';AssetState!='Dead'")}
+            "None")
+   "Number"))
 
 (defn- story-changes
   [begin end]
   (request "/Hist/PrimaryWorkitem"
-           {:sel "Number,Name,Timebox.Name,Team.Name,Estimate,ChangedBy.Name,AssetState"
-            :where (str "ChangeDate>'" begin "';ChangeDate<'" end \')
+           {:sel "ChangeDate,Number,Name,Timebox.Name,Team.Name,Estimate,ChangedBy.Name,AssetState"
+            :where (str "ChangeDate>'" (vone-date begin) "';ChangeDate<'" (vone-date end) \')
             :sort "ChangeDate,Number"}
            "None"))
 
-(defn- index [sm k]
-  (reduce #(assoc %1 (%2 k) %2) {} sm))
+(defn link
+  [number]
+  (html [:a {:href (str base-url "/assetdetail.v1?Number=" number)} number]))
 
 (defn churnStories
   "The story names added to a sprint, and removed from a sprint"
@@ -669,7 +679,7 @@
   (let [span (sprint-span sprint)
         begin (span "BeginDate")
         end (span "EndDate")
-        initial (index (storys-on team sprint begin) "Number")
+        initial (stories-on team sprint begin)
         changes (story-changes begin end)
         in? (fn [story]
               (and (= sprint (story "Timebox.Name"))
@@ -679,7 +689,11 @@
                (let [number (story "Number")
                      was (stories number)
                      in (in? story)
-                     row (map story ["Number" "Name" "Estimate" "ChangedBy.Name"])]
+
+                     m (-> story
+                           (update-in ["Number"] link)
+                           (update-in ["ChangeDate"] readable-date))
+                     row (map m ["ChangeDate" "Number" "Name" "Estimate" "ChangedBy.Name"])]
                  (cond (and was (not in))
                        [(dissoc stories number) (conj changes (cons "Removed" row))]
 
@@ -692,17 +706,29 @@
                        :else
                        [stories changes])))
         events (second (reduce what [initial []] changes))]
-    events))
+    (cons ["Action" "Date" "Story" "Title" "Points" "By"]
+          events)))
 
-#_(defn churn
+(defn- diff [a b]
+  (reduce dissoc a (keys b)))
+
+(defn- collect [as bs]
+  (reduce merge (map diff as bs)))
+
+(defn- churn-data
+  [team sprint]
+  (let [span (sprint-span sprint)
+        begin (time/plus (span "BeginDate") (time/days 1))
+        end (span "EndDate")]
+    (for-sprint team sprint begin end stories-on)))
+
+(defn churn
   "The count of stories added to and removed from a sprint"
   [team sprint]
   (let [stories (churn-data team sprint)
         added (collect (rest stories) stories)
-        removed (collect stories (rest stories))
-        a (count added)
-        r (count removed)]
-    [sprint a r]))
+        removed (collect stories (rest stories))]
+    [sprint (count added) (count removed)]))
 
 (defn churnComparison
   "Gets a table of the past 4 sprints' churn"
@@ -711,7 +737,15 @@
                (take-to sprint)
                (take-last 5))]
     (cons ["Sprint" "Added" "Removed"]
-          (map #(churn team %) s))))
+          (pmap #(churn team %) s))))
+
+(defn churnStoriesList
+  [team sprint]
+  (let [stories (churn-data team sprint)
+        added (collect (rest stories) stories)
+        removed (collect stories (rest stories))
+        all (map key (set (concat added removed)))]
+    all))
 
 (defn- defect-rate-on
   [scope asof]
@@ -744,9 +778,5 @@
                                       ";Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'10'"
                                       ";Workitems:Defect[AssetState!='Dead'].@Count>'100'")
                           :sort "Name"})))
-
-
-
-
 
 
