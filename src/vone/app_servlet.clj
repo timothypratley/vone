@@ -6,6 +6,7 @@
             [noir.response :refer [redirect]]
             [noir.session :as session]
             [noir.response :refer [content-type status]]
+            [hiccup.middleware :refer [wrap-base-url]]
             [slingshot.slingshot :refer [try+]]
             ;[appengine-magic.servlet :refer [make-servlet-service-method]]
             ;[appengine-magic.multipart-params :refer [wrap-multipart-params]]
@@ -39,14 +40,15 @@
          (concat
           (page-routes 'vone.views.pages)
           [(GET "/" [] (home))
-           (GET "" [] (redirect "/"))
+           ; TODO: When deployed as a WAR, you can get empty paths that need to be hardcoded to the app
+           (GET "" [] (redirect "/vone/"))
            (POST "/login" [username password] (login username password))
            (resources "/")
            (not-found "Not Found")])))
 
 (defroutes app-routes
   (with-401 (api api-routes))
-  (site site-routes))
+  (site (wrap-base-url site-routes)))
 
 (def app-handler
   (session/wrap-noir-session app-routes))
@@ -57,14 +59,5 @@
 ;; entry point for a regular WAR style deployment
 ;(defn -service [this request response]
 ;  ((make-servlet-service-method app-handler) this request response))
-
-
-
-
-
-
-
-
-
 
 
