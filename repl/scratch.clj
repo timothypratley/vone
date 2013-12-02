@@ -5,6 +5,7 @@
             [vone.helpers :refer :all]
             [vone.version-one-request :refer :all]))
 
+(storyChurnHistory "D-19903" "TC Sharks" "TC1316")
 
 (map second (#'vone.views.services/for-sprint "TC Sharks" "TC1313"
                                   (time/minus (time/now) (time/weeks 1))
@@ -23,6 +24,7 @@
                        "';Team.Name='" team
                        "';AssetState!='Dead'")}))
 
+(churnStories "TC Sharks" "TC1316")
 (cumulative "TC Sharks" "TC1313")
 
 (team-sprints)
@@ -59,6 +61,10 @@
   (clojure.string/join "/" (map keyword arglist)))
 
 (meta #'inc)
+
+
+
+
 
 
 

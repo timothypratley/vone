@@ -576,9 +576,16 @@
     [])
 
 (defn- compress
-  [xs]
-  (reduce #(if (= (last %1) %2) %1 (conj %1 %2)) [] xs))
-;(is (= (compress [:a :a :b :c :a :c :c :c]) [:a :b :c :a :c]))
+  ([xs]
+   (compress xs identity))
+  ([xs by]
+   (reduce (fn [aggregate new-value]
+             (if (= (by new-value) (by (last aggregate)))
+               aggregate
+               (conj aggregate new-value)))
+           [] xs)))
+;(fact (compress [:a :a :b :c :a :c :c :c]) => [:a :b :c :a :c]))
+;(fact (compress [{:a 1} {:a 2} {:a 2}] :a) => [{:a 1} {:a 2}])
 
 (defn- count-failed
   [s]
@@ -605,57 +612,89 @@
     (cons ["Sprint" "Failed Review"]
           (take-last 5 (take c sprints)))))
 
-(defn- count-added-after-start
-  [s]
-  (->> s
-       compress
-       (filter #(= "Failed Review" (get % "Status.Name")))
-       (group-by #(get % "Timebox.Name"))
-       (map (fn [[k v]]
-              [k (count v)]))
-       sort))
+(defn nth= [a b n]
+  (= (nth a n) (nth b n)))
 
+(defn storyChurnHistory
+  [story sprint team]
+  (let [x (request-rows "/Hist/PrimaryWorkitem"
+                        {:sel "ChangeDate,ChangedBy.Name,Timebox.Name,Team.Name,AssetState"
+                         :where (str "Number='" story \')}
+                        "None")
+        y (compress x #(drop 2 %))
+        what (fn [old new]
+               (str
+                (->> [(when-not (nth= old new 2)
+                       (str "Assigned to sprint " (nth new 2)))
+                     (when-not (nth= old new 3)
+                       (str "Moved to team " (nth new 3)))
+                     (when-not (nth= old new 4)
+                       (if (= (nth new 4) 64.0)
+                         "Undeleted"
+                         "Deleted"))]
+                    (remove nil?)
+                    (clojure.string/join " and "))
+                " by "
+                (second new)
+                " on "
+                (readable-date (first new))))
+        created (first y)
+        init (str "Created by " (second created) " on " (readable-date (first created)))
+        hist (clojure.string/join ", " (cons init (map what y (rest y))))]
+    hist))
 
 (defn- storys-on
   [team sprint asof]
-  (group-by second
-            (map #(cons asof %)
-                 (request-rows "/Hist/PrimaryWorkitem"
-                               {:asof (vone-date asof)
-                                :sel "Number,Name,Estimate,ChangedBy.Name"
-                                :where (str "Timebox.Name='" sprint
-                                            "';Team.Name='" team
-                                            "';AssetState!='Dead'")}))))
+  (request "/Hist/PrimaryWorkitem"
+           {:asof (vone-date asof)
+            :sel "ChangeDate,ChangedBy.Name,Number,Name,Timebox.Name,Team.Name,Estimate,AssetState"
+            :where (str "Timebox.Name='" sprint
+                        "';Team.Name='" team
+                        "';AssetState!='Dead'")}))
 
-(defn- churn-data
-  [team sprint]
-  (let [span (sprint-span sprint)
-        begin (time/plus (span "BeginDate") (time/days 1))
-        end (span "EndDate")]
-    (for-sprint team sprint begin end storys-on)))
+(defn- story-changes
+  [begin end]
+  (request "/Hist/PrimaryWorkitem"
+           {:sel "Number,Name,Timebox.Name,Team.Name,Estimate,ChangedBy.Name,AssetState"
+            :where (str "ChangeDate>'" begin "';ChangeDate<'" end \')
+            :sort "ChangeDate,Number"}
+           "None"))
 
-(defn- diff [a b]
-  (reduce dissoc a (keys b)))
-
-(defn- collect [as bs]
-  (let [diffs (map first (vals (reduce merge (map diff as bs))))
-        link #(html [:a {:href (str base-url "/assetdetail.v1?Number=" %)} %])]
-    (map #(update-in % [1] link) (map vec diffs))))
+(defn- index [sm k]
+  (reduce #(assoc %1 (%2 k) %2) {} sm))
 
 (defn churnStories
   "The story names added to a sprint, and removed from a sprint"
   [team sprint]
-  (let [stories (churn-data team sprint)
-        added (collect (rest stories) stories)
-        removed (collect stories (rest stories))
-        ; TODO refactor insert
-        a (map #(cons (first %) (cons "Added" (rest %))) added)
-        r (map #(cons (time/plus (first %) (time/days 1)) (cons "Removed" (rest %))) removed)]
-    (cons ["Date" "Action" "Story" "Title" "Points" "By"]
-          (map #(update-in (vec %) [0] readable-date)
-               (sort-by first (concat a r))))))
+  (let [span (sprint-span sprint)
+        begin (span "BeginDate")
+        end (span "EndDate")
+        initial (index (storys-on team sprint begin) "Number")
+        changes (story-changes begin end)
+        in? (fn [story]
+              (and (= sprint (story "Timebox.Name"))
+                   (= team (story "Team.Name"))
+                   (= 64.0 (story "AssetState"))))
+        what (fn [[stories changes] story]
+               (let [number (story "Number")
+                     was (stories number)
+                     in (in? story)
+                     row (map story ["Number" "Name" "Estimate" "ChangedBy.Name"])]
+                 (cond (and was (not in))
+                       [(dissoc stories number) (conj changes (cons "Removed" row))]
 
-(defn churn
+                       (and in (not was))
+                       [(assoc stories number story) (conj changes (cons "Added" row))]
+
+                       (and was in (not= (was "Estimate") (story "Estimate")))
+                       [(assoc stories number story) (conj changes (cons "Re-estimated" row))]
+
+                       :else
+                       [stories changes])))
+        events (second (reduce what [initial []] changes))]
+    events))
+
+#_(defn churn
   "The count of stories added to and removed from a sprint"
   [team sprint]
   (let [stories (churn-data team sprint)
@@ -678,7 +717,7 @@
   [scope asof]
   (let [count-open "Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count"
         count-total "Workitems:Defect[AssetState!='Dead'].@Count"]
-    (first (request-rows "/Data/Scope"
+    (first (request-rows "/Hist/Scope"
                          {:asof (vone-date asof)
                           :sel (str count-open \, count-total)
                           :where (str "AssetState!='Dead';Name='" scope \')}))))
@@ -705,5 +744,9 @@
                                       ";Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'10'"
                                       ";Workitems:Defect[AssetState!='Dead'].@Count>'100'")
                           :sort "Name"})))
+
+
+
+
 
 

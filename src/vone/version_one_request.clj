@@ -47,12 +47,14 @@
   "Converts XML into a map"
   [x not-found]
   (try
-    (-> (java.io.ByteArrayInputStream. (.getBytes x "UTF8"))
-      xml/parse
-      (collapse not-found))
-    (catch Exception e
-      (println x)
-      (throw e))))
+    ;; Version One can return invalid characters for 1.0, but they work fine if we treat them as 1.1
+    (let [x (clojure.string/replace-first x "<?xml version=\"1.0\"?>" "<?xml version=\"1.1\"?>")]
+      (-> (java.io.ByteArrayInputStream. (.getBytes ) "UTF8")
+          xml/parse
+          (collapse not-found))
+      (catch Exception e
+        (println x)
+        (throw e)))))
 
 (defn request
   "Makes an xml http request and collapses the body"
@@ -80,5 +82,9 @@
 (defn as-url
   [query args]
   (str base-url query \? (codec/url-decode (client/generate-query-string args))))
+
+
+
+
 
 

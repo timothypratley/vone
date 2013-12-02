@@ -31,6 +31,8 @@
 
 
 (facts "about services"
+       (fact (compress [:a :a :b :c :a :c :c :c]) => [:a :b :c :a :c])
+       (fact (compress [{:a 1} {:a 2} {:a 2}] :a) => [{:a 1} {:a 2}])
        (fact (#'vone.views.services/diff {:a 1 :b 2} {:b 3}) => {:a 1})
        (fact (sprint-span "TC1313") => (just {"BeginDate" truthy, "EndDate" truthy}))
        (fact (names "StoryStatus") => seq)
@@ -63,5 +65,9 @@
        (fact (churnComparison "TC Sharks" "TC1313") => data-rows)
        (fact (defectRate "SP5.0.0") => data-rows)
        (fact (projects) => seq))
+
+
+
+
 
 
