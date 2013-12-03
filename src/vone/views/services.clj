@@ -629,7 +629,7 @@
                      (when-not (nth= old new 3)
                        (str "Moved to team " (nth new 3)))
                      (when-not (nth= old new 4)
-                       (if (= (nth new 4) 64.0)
+                       (if (#{128.0 64.0} (nth new 4))
                          "Undeleted"
                          "Deleted"))]
                     (remove nil?)
@@ -681,15 +681,12 @@
         end (span "EndDate")
         initial (stories-on team sprint begin)
         changes (story-changes begin end)
-        in? (fn [story]
-              (and (= sprint (story "Timebox.Name"))
-                   (= team (story "Team.Name"))
-                   (= 64.0 (story "AssetState"))))
         what (fn [[stories changes] story]
                (let [number (story "Number")
                      was (stories number)
-                     in (in? story)
-
+                     in (and (= sprint (story "Timebox.Name"))
+                             (= team (story "Team.Name"))
+                             (#{64.0 128.0} (story "AssetState")))
                      m (-> story
                            (update-in ["Number"] link)
                            (update-in ["ChangeDate"] readable-date))
@@ -778,5 +775,7 @@
                                       ";Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'10'"
                                       ";Workitems:Defect[AssetState!='Dead'].@Count>'100'")
                           :sort "Name"})))
+
+
 
 
