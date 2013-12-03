@@ -47,8 +47,8 @@
   "Converts XML into a map"
   [x not-found]
   (try
-    ;; Version One can return invalid characters for 1.0, but they work fine if we treat them as 1.1
-    (-> (java.io.ByteArrayInputStream. (.getBytes (clojure.string/replace-first x "<?xml version=\"1.0\"" "<?xml version=\"1.1\"")  "UTF8"))
+    ;; Version One can return invalid characters converted to string "&#x19;" which is invalid XML
+    (-> (java.io.ByteArrayInputStream. (.getBytes (clojure.string/replace x #"&#x\d*;" "") "UTF8"))
         xml/parse
         (collapse not-found))
     (catch Exception e
