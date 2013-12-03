@@ -43,12 +43,16 @@
         (println "xhr failed (" (first (params :basic-auth)) \@ url args \))
         (throw e)))))
 
+(defn clean-xml
+  "Version One can return invalid characters converted to string &#x19; which is invalid XML"
+  [x]
+  (clojure.string/replace x #"&#x[0-9A-Fa-f]+;" ""))
+
 (defn xml-collapse
   "Converts XML into a map"
   [x not-found]
   (try
-    ;; Version One can return invalid characters converted to string "&#x19;" which is invalid XML
-    (-> (java.io.ByteArrayInputStream. (.getBytes (clojure.string/replace x #"&#x\d*;" "") "UTF8"))
+    (-> (java.io.ByteArrayInputStream. (.getBytes (clean-xml x) "UTF8"))
         xml/parse
         (collapse not-found))
     (catch Exception e

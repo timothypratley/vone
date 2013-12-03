@@ -7,4 +7,6 @@
  (fact (unmap [:a :b] [{:a 1, :b 2}
                        {:c 3, :b 4}])
        => [[1 2]
-           [nil 4]]))
+           [nil 4]])
+ (fact (clean-xml "some&#x19;text") => "sometext")
+ (fact (clean-xml "some&#x2fA;text") => "sometext"))
