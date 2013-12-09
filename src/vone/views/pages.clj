@@ -63,14 +63,14 @@
        [:a.navbar-brand {:href "#"} "Vone"]]
       [:div.collapse.navbar-collapse {:role "navigation"}
        [:ul.nav.navbar-nav
+        ;[:li (link-to "#/overall" "Overall")]
         ;TODO: use angular to set the active menu
         [:li (link-to "#/retro" "Retrospective")]
         [:li (link-to "#/roadmap" "Roadmap")]
         [:li (link-to "#/fabel" "Fabel")]
         [:li (link-to "#/allteams" "All Teams")]
         [:li (link-to "#/projectdefectrate" "Project Defect Rate")]
-        ;[:li (link-to "#/overall" "Overall")]
-        ]
+        [:li (link-to "#/history" "Story History")]]
        [:ul.nav.navbar-nav.navbar-right.ng-cloak
         [:li.login {:ng-show "!username"}
          (link-to "/#/login" "Login")]
@@ -235,12 +235,8 @@
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
 
-
-
-
-
-
-
-
-
-
+(defn history []
+  (html
+   [:h1 "Story History"]
+   (text-field {:ng-model "args"} "number")
+   [:div {:chart "storyFullHistory"}]))

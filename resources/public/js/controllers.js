@@ -166,10 +166,23 @@ function RankingsCtrl($scope, $http, $log) {
   .error($log);
 }
 
+function HistoryCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
+  if ($routeParams.number) {
+    $scope.args = decode($routeParams.number);
+  } else {
+    $scope.args = null;
+  }
+  $scope.$watch('args', function(newValue) {
+    if (newValue) {
+      $location.path('history/' + newValue);
+    }
+  }, true);
+}
 
 
 
 
 
 
-
+
+

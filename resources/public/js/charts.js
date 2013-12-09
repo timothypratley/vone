@@ -8,7 +8,7 @@ angular.module('charts', [])
     visualization: "AreaChart",
     title: "Defect Rate",
     vAxis: {title: "Defects", minValue: 0},
-    hAxis: {title: "Day"},
+    hAxis: {title: "Date"},
     areaOpacity: 0.0
   },
   burndown: {
@@ -78,8 +78,6 @@ angular.module('charts', [])
   defects: {
     visualization: "Table",
     title: "Defects",
-    vAxis: {title: "Date"},
-    hAxis: {title: "Defect Count", minValue: 0},
     allowHtml: true,
     height: null
   },
@@ -118,6 +116,12 @@ angular.module('charts', [])
     visualization: "Table",
     title: "Fabel",
     height: 1000
+  },
+  storyFullHistory: {
+    visualization: "Table",
+    title: "Story History",
+    allowHtml: true,
+    height: null
   },
   allocation: {
     visualization: "Table",
@@ -252,4 +256,5 @@ angular.module('charts', [])
 
 
 
-
+
+

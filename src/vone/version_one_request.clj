@@ -84,5 +84,3 @@
 (defn as-url
   [query args]
   (str base-url query \? (codec/url-decode (client/generate-query-string args))))
-
-

@@ -29,6 +29,10 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
         {templateUrl: "member", controller: MemberCtrl})
   .when("/rankings",
         {templateUrl: "rankings", controller: RankingsCtrl})
+  .when("/history",
+        {templateUrl: "history", controller: HistoryCtrl})
+  .when("/history/:number",
+        {templateUrl: "history", controller: HistoryCtrl})
   .otherwise({redirectTo: "/about"});
 })
 .directive('authenticate', function($rootScope, $http, $log) {
@@ -88,4 +92,5 @@ google.setOnLoadCallback(function() {
 
 
 
-
+
+

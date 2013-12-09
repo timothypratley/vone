@@ -1,5 +1,6 @@
 (ns vone.views.services
-  (:require [vone.version-one-request :refer :all]
+  (:require [clojure.core.memoize :as memo]
+            [vone.version-one-request :refer :all]
             [vone.helpers :refer :all]
             [clj-time.core :as time]
             [clj-time.coerce :as coerce]
@@ -625,15 +626,15 @@
         what (fn [old new]
                (str
                 (->> [(when-not (nth= old new 2)
-                       (str "Assigned to sprint " (nth new 2)))
-                     (when-not (nth= old new 3)
-                       (str "Moved to team " (nth new 3)))
-                     (when-not (nth= old new 4)
-                       (if (#{128.0 64.0} (nth new 4))
-                         "Undeleted"
-                         "Deleted"))]
-                    (remove nil?)
-                    (clojure.string/join " and "))
+                        (str "Assigned to sprint " (nth new 2)))
+                      (when-not (nth= old new 3)
+                        (str "Moved to team " (nth new 3)))
+                      (when-not (nth= old new 4)
+                        (if (#{128.0 64.0} (nth new 4))
+                          "Undeleted"
+                          "Deleted"))]
+                     (remove nil?)
+                     (clojure.string/join " and "))
                 " by "
                 (second new)
                 " on "
@@ -661,17 +662,22 @@
             "None")
    "Number"))
 
-(defn- story-changes
+(defn- story-changes-slow
   [begin end]
   (request "/Hist/PrimaryWorkitem"
            {:sel "ChangeDate,Number,Name,Timebox.Name,Team.Name,Estimate,ChangedBy.Name,AssetState"
             :where (str "ChangeDate>'" (vone-date begin) "';ChangeDate<'" (vone-date end) \')
             :sort "ChangeDate,Number"}
            "None"))
+(def ^:private story-changes (memo/ttl story-changes-slow :ttl/threshold 60000))
 
 (defn link
   [number]
-  (html [:a {:href (str base-url "/assetdetail.v1?Number=" number)} number]))
+  (html [:a {:href (str base-url "/assetdetail.v1?Number=" number) :target "_blank"} number]))
+
+(defn link-history
+  [text number]
+  (html [:a {:href (str "#/history/" number) :target "_blank"} text]))
 
 (defn churnStories
   "The story names added to a sprint, and removed from a sprint"
@@ -692,13 +698,13 @@
                            (update-in ["ChangeDate"] readable-date))
                      row (map m ["ChangeDate" "Number" "Name" "Estimate" "ChangedBy.Name"])]
                  (cond (and was (not in))
-                       [(dissoc stories number) (conj changes (cons "Removed" row))]
+                       [(dissoc stories number) (conj changes (cons (link-history "Removed" number) row))]
 
                        (and in (not was))
-                       [(assoc stories number story) (conj changes (cons "Added" row))]
+                       [(assoc stories number story) (conj changes (cons (link-history "Added" number) row))]
 
                        (and was in (not= (was "Estimate") (story "Estimate")))
-                       [(assoc stories number story) (conj changes (cons "Re-estimated" row))]
+                       [(assoc stories number story) (conj changes (cons (link-history "Re-estimated" number) row))]
 
                        :else
                        [stories changes])))
@@ -706,11 +712,11 @@
     (cons ["Action" "Date" "Story" "Title" "Points" "By"]
           events)))
 
-(defn- diff [a b]
+(defn- map-difference [a b]
   (reduce dissoc a (keys b)))
 
 (defn- collect [as bs]
-  (reduce merge (map diff as bs)))
+  (reduce merge (map map-difference as bs)))
 
 (defn- churn-data
   [team sprint]
@@ -776,6 +782,76 @@
                                       ";Workitems:Defect[AssetState!='Dead'].@Count>'100'")
                           :sort "Name"})))
 
+(defn- rename
+  [s]
+  (let [s (clojure.string/replace s #".Name" "")
+        translate {"Name" "Title"
+                   "Timebox" "Sprint"
+                   "Parent" "Customer"
+                   "Scope" "Project"
+                   "Super" "Epic"}]
+    (translate s s)))
 
+(defn- asset-state
+  [x]
+  ({0.0 "Future"
+    64.0 "Active"
+    128.0 "Closed"
+    200.0 "Template"
+    208.0 "Converted to Epic"
+    255.0 "Deleted"} x "Unknown"))
 
-
+(defn storyFullHistory
+  [story]
+  (let [missing (Object.)
+        remove-missing (fn [m]
+                         (into {} (remove #(= missing (val %)) m)))
+        history (->> (request "/Hist/PrimaryWorkitem"
+                              {:sel (str "ChangedBy.Name,ChangeDate,Name,Estimate,Status.Name,Team.Name,Timebox.Name,"
+                                         "AssetState,Scope.Name,Parent.Name,Description,"
+                                         "Priority.Name,SplitFrom.Number,SplitTo.Number,Super.Name,Source.Name,Reference,Owners.Name,"
+                                         "BlockingIssues.Number,Requests.Number,Order,"
+                                         ; to get the real change for relations we would need to query them by story number and merge
+                                         "Attachments.Name,Links.Name,ChangeSets.Reference,ChangeSets.Name")
+                               :where (str "Number='" story \')}
+                              missing)
+                     (map remove-missing))
+        title ((last history) "Name")
+        meta-keys ["ChangeDate" "ChangedBy.Name"]
+        meta-history (map #(map % meta-keys) history)
+        delta-history (map #(apply dissoc % meta-keys) history)
+        unwrap (fn [k v]
+                 (if (sequential? v)
+                  (clojure.string/join ", " (sort v))
+                  (if (= "AssetState" k)
+                    (asset-state v)
+                    v)))
+        edits (for [[removed-keys added changed] (map exdiff delta-history (rest delta-history))]
+                (concat
+                 (when (seq removed-keys)
+                   [(str "Cleared " (unwrap nil (map rename removed-keys)))])
+                 (map (fn [[k v]]
+                        (str "Set " (rename k) " to " (unwrap k v)))
+                      (sort added))
+                 (map (fn [[k v1 v2]]
+                        (if (= k "Description")
+                           [:div
+                            [:div "Changed Description:"]
+                            [:div
+                             [:div.col-md-6 v1]
+                             [:div.col-md-6 v2]]]
+                          (str "Changed " (rename k) " from " (unwrap k v1) " to " (unwrap k v2))))
+                      (sort changed))))
+        edits (cons [(if-let [split-from ((first history) "SplitFrom")]
+                       (str "Split " story " from " split-from)
+                       (str "Created " story))]
+                    edits)
+        fmt (fn [edit]
+              (html [:ul.list-unstyled
+                     (for [e edit]
+                       [:li e])]))
+        edits (map fmt edits)]
+    (cons ["Date" title "By"]
+          (reverse
+           (map (fn [[date by] edit] [(readable-date date) edit by])
+                meta-history edits)))))
