@@ -244,17 +244,3 @@ angular.module('charts', [])
     .error($log.error);
   };
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-

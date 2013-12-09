@@ -21,6 +21,3 @@
             [lein-kibit "0.0.8"]]
   :ring {:handler vone.app-servlet/app-handler
          :reload-paths ["src"]})
-
-
-

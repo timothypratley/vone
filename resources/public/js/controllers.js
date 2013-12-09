@@ -178,11 +178,3 @@ function HistoryCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
     }
   }, true);
 }
-
-
-
-
-
-
-
-

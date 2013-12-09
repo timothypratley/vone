@@ -83,14 +83,3 @@ google.load('visualization', '1', {'packages':['corechart', 'table']});
 google.setOnLoadCallback(function() {
   angular.bootstrap(document.body, ['vone']);
 });
-
-
-
-
-
-
-
-
-
-
-

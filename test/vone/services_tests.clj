@@ -66,6 +66,3 @@
        (fact (churnComparison "TC Sharks" "TC1313") => data-rows)
        (fact (defectRate "SP5.0.0") => data-rows)
        (fact (projects) => seq))
-
-
-
