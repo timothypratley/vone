@@ -73,7 +73,7 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
   .success(function(data, status) {
     $log.info("Got projects");
     $log.info(data);
-    $rootScope.projects = data;
+    $rootScope.projects = _.reduce(data, function (agg, x) {agg[x] = false; return agg;}, {});
   })
   .error($log.errror);
 });

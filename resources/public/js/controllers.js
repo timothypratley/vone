@@ -140,8 +140,11 @@ function OverallCtrl($scope, $http, $log) {
 
 }
 
-function ProjectDefectRateCtrl($scope, $http, $log) {
-    $scope.today = now();
+function ProjectDefectRateCtrl($scope, $http, $log, $rootScope) {
+  $scope.today = now();
+  $scope.selectAll = function(x) {
+    angular.forEach($rootScope.projects, function(v, k) { $rootScope.projects[k] = x;});
+  };
 }
 
 function MembersCtrl($scope, $http, $log) {

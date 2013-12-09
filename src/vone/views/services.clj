@@ -647,8 +647,6 @@
 (defn- index
   [sm k]
   (reduce #(assoc %1 (%2 k) %2) {} sm))
-;(fact (index [{:a :A, :b 2} {:a :B :b 3}] :a)
-;      => {:A {:a :A, :b 2} :B {:a :B, :b 3}})
 
 (defn- stories-on
   [team sprint asof]

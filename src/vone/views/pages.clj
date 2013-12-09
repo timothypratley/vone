@@ -229,8 +229,11 @@
   (html
    [:h1 "Defect Rate: {{today}}"]
    [:div.report
+    [:div "Select" (submit-button {:ng-click "selectAll(true)"} "All") (submit-button {:ng-click "selectAll(false)"} "None")]
+    [:label {:ng-repeat "(project,enabled) in projects"}
+     [:input {:type "checkbox" :ng-model "projects[project]"} "{{project}}"]]
     [:ul.list-unstyled
-     [:li {:ng-repeat "args in projects"}
+     [:li {:ng-repeat "(args, enabled) in projects | filter:enabled"}
       [:hr]
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
