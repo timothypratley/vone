@@ -17,8 +17,8 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
         {templateUrl: "roadmap", controller: RoadmapCtrl})
   .when("/fabel",
         {templateUrl: "fabel", controller: FabelCtrl})
-  .when("/allteams",
-        {templateUrl: "allteams", controller: AllTeamsCtrl})
+  .when("/status",
+        {templateUrl: "status", controller: StatusCtrl})
   .when("/projectdefectrate",
         {templateUrl: "projectdefectrate", controller: ProjectDefectRateCtrl})
   .when("/overall",
@@ -33,7 +33,7 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
         {templateUrl: "history", controller: HistoryCtrl})
   .when("/history/:number",
         {templateUrl: "history", controller: HistoryCtrl})
-  .otherwise({redirectTo: "/about"});
+  .otherwise({redirectTo: "/status"});
 })
 .directive('authenticate', function($rootScope, $http, $log) {
   $rootScope.logout = function() {
@@ -73,7 +73,7 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
   .success(function(data, status) {
     $log.info("Got projects");
     $log.info(data);
-    $rootScope.projects = _.reduce(data, function (agg, x) {agg[x] = false; return agg;}, {});
+    $rootScope.projects = _.map(data, function (x) { return {name: x, enabled: false}; });
   })
   .error($log.errror);
 });

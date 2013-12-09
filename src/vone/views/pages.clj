@@ -68,7 +68,7 @@
         [:li (link-to "#/retro" "Retrospective")]
         [:li (link-to "#/roadmap" "Roadmap")]
         [:li (link-to "#/fabel" "Fabel")]
-        [:li (link-to "#/allteams" "All Teams")]
+        [:li (link-to "#/status" "Status")]
         [:li (link-to "#/projectdefectrate" "Project Defect Rate")]
         [:li (link-to "#/history" "Story History")]]
        [:ul.nav.navbar-nav.navbar-right.ng-cloak
@@ -168,12 +168,17 @@
     ;TODO: why does this have to be unsafe?
     [:div.break {:ng-bind-html-unsafe "feedback"}]]))
 
-(defn allteams []
+(defn status []
   (html
-   [:h1 "All Teams Status: {{today}}"]
+   [:h1 "Team Status: {{today}}"]
+   [:div "Select" (submit-button {:ng-click "selectAll(true)"} "All") (submit-button {:ng-click "selectAll(false)"} "None")]
+   [:label {:ng-repeat "pair in argss"
+            :style "margin: 0px 20px;"}
+    [:input {:type "checkbox" :ng-model "pair.enabled"} "{{pair.name}}"]]
    [:div.report
     [:ul.list-unstyled
-     [:li {:ng-repeat "args in argss"}
+     [:li {:ng-repeat "pair in argss | filter:{enabled:true}"
+           :ng-init "args = pair.name"}
       [:br]
       [:br]
       [:h2 "{{args}}"]
@@ -228,13 +233,16 @@
 (defn projectdefectrate []
   (html
    [:h1 "Defect Rate: {{today}}"]
+   [:div "Select" (submit-button {:ng-click "selectAll(true)"} "All") (submit-button {:ng-click "selectAll(false)"} "None")]
+   [:label {:ng-repeat "project in projects"
+            :style "margin: 0px 20px;"}
+    [:input {:type "checkbox" :ng-model "project.enabled"} "{{project.name}}"]]
    [:div.report
-    [:div "Select" (submit-button {:ng-click "selectAll(true)"} "All") (submit-button {:ng-click "selectAll(false)"} "None")]
-    [:label {:ng-repeat "(project,enabled) in projects"}
-     [:input {:type "checkbox" :ng-model "projects[project]"} "{{project}}"]]
     [:ul.list-unstyled
-     [:li {:ng-repeat "(args, enabled) in projects | filter:enabled"}
-      [:hr]
+     [:li {:ng-repeat "project in projects | filter:{enabled:true}"
+           :ng-init "args = project.name"}
+      [:br]
+      [:br]
       [:h2 "{{args}}"]
       [:div {:chart "defectRate"}]]]]))
 

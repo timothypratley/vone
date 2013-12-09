@@ -102,25 +102,26 @@ function RetroCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
   }, true);
 }
 
-function AllTeamsCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
+function StatusCtrl($scope, $routeParams, $location, $rootScope, $http, $log) {
   var match = function() {
-    var team, sprint;
-
-    $scope.today = now();
-
     $scope.argss = _.chain($rootScope.teamSprints)
     .map(function (sprints, team) {
       var currentSprint = _.intersection(sprints, $rootScope.currentSprints)[0];
       if (_.isUndefined(currentSprint)) {
         return undefined;
       }
-      return team + '/' + currentSprint;
+      return {name: team + '/' + currentSprint, enabled: false};
     })
-    .filter(_.isString)
-    .sortBy(_.identity)
+    .compact()
+    .sortBy(function (x) { return x.name; })
     .value();
-  }
 
+    $scope.selectAll = function(enabled) {
+      angular.forEach($scope.argss, function(x) { x.enabled = enabled;});
+    };
+  };
+
+  $scope.today = now();
   if ($rootScope.teamSprints) {
     match($rootScope.teamSprints);
   } else {
@@ -142,8 +143,8 @@ function OverallCtrl($scope, $http, $log) {
 
 function ProjectDefectRateCtrl($scope, $http, $log, $rootScope) {
   $scope.today = now();
-  $scope.selectAll = function(x) {
-    angular.forEach($rootScope.projects, function(v, k) { $rootScope.projects[k] = x;});
+  $scope.selectAll = function(enabled) {
+    angular.forEach($rootScope.projects, function(x) { x.enabled = enabled;});
   };
 }
 

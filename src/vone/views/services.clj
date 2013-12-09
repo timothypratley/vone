@@ -23,12 +23,14 @@
   "Retrieves a sorted seqence of asset names"
   ([asset]
    (flatten (request-rows (str "/Data/" asset)
-                          {:sel "Name"})))
+                          {:sel "Name"
+                           :where "AssetState!='Dead';AssetState!='Closed'"
+                           :sort "Order"})))
   ([asset asof]
    (flatten (request-rows (str "/Hist/" asset)
                           {:asof (vone-date asof)
                            :sel "Name"
-                           :where "Description;AssetState!='Dead'"
+                           :where "Description;AssetState!='Dead';AssetState!='Closed'"
                            :sort "Order"}))))
 
 (defn- index-sprints
@@ -771,14 +773,9 @@
               (for-period begin end (partial defect-rate-on scope))))))
 
 (defn projects
-  "Retrieves projects with at least one open defect, and ten closed defects"
+  "Retrieves a list of project names"
   []
-  (flatten (request-rows "/Data/Scope"
-                         {:sel "Name"
-                          :where (str "AssetState!='Dead'"
-                                      ";Workitems:Defect[AssetState!='Dead';AssetState!='Closed';Status.Name!='Accepted';Status.Name!='QA Complete'].@Count>'10'"
-                                      ";Workitems:Defect[AssetState!='Dead'].@Count>'100'")
-                          :sort "Name"})))
+  (sort (names "Scope")))
 
 (defn- rename
   [s]
