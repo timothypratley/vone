@@ -38,11 +38,11 @@ Distributed under the Eclipse Public License, the same as Clojure.
 
 ## Development notes
 
-The principle is to expose an API of webservices that consume V1 webservices, process the data, and spit out data.
+The principle is to expose an API of webservices that consume VersionOne webservices, process the data, and spit out data.
 All the services can spit out json/csv/or google charts datasource format, depending on the url you access them with.
 So the frontend is doing requests to the “vone API” – usually by a chart datasource.
 
-Adding a query consists of constructing the URL that gets useful data from V1:
+Adding a query consists of constructing the URL that gets useful data from VersionOne:
 https://www.host.com/company/VersionOne/rest-1.v1/Data/PrimaryWorkitem?sel=Number&where=Timebox.Name='X'
 experimenting with the query in a browser is pretty convenient
 Create a function in vone which will construct said query using inputs (sprint in this case)

@@ -18,7 +18,7 @@
             :novalidate true}
      [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
      [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
-     (submit-button "VersionOne Login")]))
+     [:button.btn.btn-primary {:type "button"} "VersionOne Login"]]))
   ([username password]
    (println "login" username)
    (session/put! :username username)
@@ -76,7 +76,8 @@
          (link-to "/#/login" "Login")]
         [:li.logout {:ng-show "username"}
          [:span "{{username}}"]
-         (submit-button {:ng-click "logout()"} "logout")]]]]]
+         (:button.btn.btn-default {:type "button"
+                                   :ng-click "logout()"} "logout")]]]]]
 
     [:div#loginbox.modal.hide.fade {:tabindex -1
                                     :role "dialog"
@@ -92,7 +93,7 @@
               :novalidate true}
        [:div (label "username" "Username") (text-field {:ng-model "username"} "username")]
        [:div (label "password" "Password") (password-field {:ng-model "password"} "password")]
-       (submit-button "VersionOne Login")]]]
+       [:button.btn.btn.primary {:type "button"} "VersionOne Login"]]]]
     ;TODO: should have a modal-footer with submit, but then no form?
 
     [:div.container.content
@@ -110,21 +111,7 @@
 
 (defn about []
   (html
-   [:div "Please select a report from the navbar above."]))
-
-(defn burndown []
-  (html
-   (form-to [:post "/burndown"]
-            [:div (label "sprint" "Sprint") (text-field "sprint")]
-            [:div (label "team" "Team") (text-field "team")]
-            (submit-button "Get Burndown"))))
-
-(defn cumulative []
-  (html
-   (form-to [:post "/cumulative"]
-            [:div (label "sprint" "Sprint") (text-field "sprint")]
-            [:div (label "team" "Team") (text-field "team")]
-            (submit-button "Get Cumulative Flow"))))
+   [:div "Custom Reporting on VersionOne data.  Please select a report from the navbar above."]))
 
 (def select-retro
   [:div
@@ -168,10 +155,17 @@
     ;TODO: why does this have to be unsafe?
     [:div.break {:ng-bind-html-unsafe "feedback"}]]))
 
+(def select-buttons
+  [:div "Select:"
+   [:button.btn.btn-default {:type "button"
+                             :ng-click "selectAll(true)"} "All"]
+   [:button.btn.btn-default {:type "button"
+                             :ng-click "selectAll(false)"} "None"]])
+
 (defn status []
   (html
    [:h1 "Team Status: {{today}}"]
-   [:div "Select" (submit-button {:ng-click "selectAll(true)"} "All") (submit-button {:ng-click "selectAll(false)"} "None")]
+   select-buttons
    [:label {:ng-repeat "pair in argss"
             :style "margin: 0px 20px;"}
     [:input {:type "checkbox" :ng-model "pair.enabled"} "{{pair.name}}"]]
@@ -233,7 +227,7 @@
 (defn projectdefectrate []
   (html
    [:h1 "Defect Rate: {{today}}"]
-   [:div "Select" (submit-button {:ng-click "selectAll(true)"} "All") (submit-button {:ng-click "selectAll(false)"} "None")]
+   select-buttons
    [:label {:ng-repeat "project in projects"
             :style "margin: 0px 20px;"}
     [:input {:type "checkbox" :ng-model "project.enabled"} "{{project.name}}"]]

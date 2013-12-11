@@ -13,11 +13,12 @@
   [d]
   (/ (Math/round (* 100.0 d)) 100.0))
 
-(defn sprint-span
+(defn- sprint-span-slow
   [sprint]
   (first (request "/Data/Timebox"
                   {:sel "BeginDate,EndDate"
                    :where (str "Name='" sprint \')})))
+(def sprint-span (memo/ttl sprint-span-slow :ttl/threshold 60000))
 
 (defn names
   "Retrieves a sorted seqence of asset names"
@@ -379,9 +380,9 @@
 (defn- with-ratios
   [estimates]
   (for [stats estimates]
-    (let [estimation (nth stats 6)
-          done (nth stats 7)
-          capacity (nth stats 8)
+    (let [estimation (nth stats 7)
+          done (nth stats 8)
+          capacity (nth stats 9)
           accuracy (ratio estimation done)
           efficiency (ratio done capacity)
           points (nth stats 1)
@@ -396,12 +397,13 @@
         c (count-to sprint (map first estimates))
         estimates (take-last 5 (take c estimates))
         estimates (with-capacity team estimates)
+        _ (println estimates)
         estimates (with-ratios estimates)]
     (if (not-empty estimates)
       (transpose
        (cons ["Sprint"
               "Points"
-              "Referenced"
+              "Billable (CHG)"
               "Stories"
               "Defects"
               "Test Sets"
@@ -411,7 +413,7 @@
               "Capacity"
               "Accuracy (Estimate/Done)"
               "Efficiency (Done/Capacity)"
-              "Referenced ratio"]
+              "Billable (CHG) ratio"]
              estimates)))))
 
 ;from incanter
@@ -615,7 +617,7 @@
     (cons ["Sprint" "Failed Review"]
           (take-last 5 (take c sprints)))))
 
-(defn nth= [a b n]
+(defn- nth= [a b n]
   (= (nth a n) (nth b n)))
 
 (defn storyChurnHistory
@@ -668,14 +670,14 @@
            {:sel "ChangeDate,Number,Name,Timebox.Name,Team.Name,Estimate,ChangedBy.Name,AssetState"
             :where (str "ChangeDate>'" (vone-date begin) "';ChangeDate<'" (vone-date end) \')
             :sort "ChangeDate,Number"}
-           "None"))
+           ""))
 (def ^:private story-changes (memo/ttl story-changes-slow :ttl/threshold 60000))
 
-(defn link
+(defn- link
   [number]
   (html [:a {:href (str base-url "/assetdetail.v1?Number=" number) :target "_blank"} number]))
 
-(defn link-history
+(defn- link-history
   [text number]
   (html [:a {:href (str "#/history/" number) :target "_blank"} text]))
 
@@ -710,7 +712,7 @@
                        [stories changes])))
         events (second (reduce what [initial []] changes))]
     (cons ["Action" "Date" "Story" "Title" "Points" "By"]
-          events)))
+          (reverse events))))
 
 (defn- map-difference [a b]
   (reduce dissoc a (keys b)))
@@ -842,11 +844,14 @@
                        (str "Created " story))]
                     edits)
         fmt (fn [edit]
-              (html [:ul.list-unstyled
-                     (for [e edit]
-                       [:li e])]))
+              (when (seq edit)
+                (html [:ul.list-unstyled
+                       (for [e edit]
+                         [:li e])])))
         edits (map fmt edits)]
     (cons ["Date" title "By"]
           (reverse
-           (map (fn [[date by] edit] [(readable-date date) edit by])
-                meta-history edits)))))
+           (remove #(nil? (second %))
+                   (map (fn [[date by] edit]
+                          [(readable-date date) edit by])
+                        meta-history edits))))))
