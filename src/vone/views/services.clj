@@ -710,7 +710,7 @@
         events (second (reduce what [initial []] changes))]
     (cons ["Action" "Date" "Story" "Title" "Points" "By"]
           (reverse (map (fn [[a b c d e f]]
-                          [(link-hisotry a c) (readable-date b) (link c) d e f])
+                          [(link-history a c) (readable-date b) (link c) d e f])
                         events)))))
 
 (defn- map-difference [a b]
