@@ -70,6 +70,7 @@
         [:li (link-to "#/fabel" "Fabel")]
         [:li (link-to "#/status" "Status")]
         [:li (link-to "#/projectdefectrate" "Project Defect Rate")]
+        [:li (link-to "#/projectopenitems" "Open Items")]
         [:li (link-to "#/history" "Story History")]]
        [:ul.nav.navbar-nav.navbar-right.ng-cloak
         [:li.login {:ng-show "!username"}
@@ -245,3 +246,19 @@
    [:h1 "Story History"]
    (text-field {:ng-model "args"} "number")
    [:div {:chart "storyFullHistory"}]))
+
+(defn projectopenitems []
+  (html
+   [:h1 "Open items: {{today}}"]
+   select-buttons
+   [:label {:ng-repeat "project in projects"
+            :style "margin: 0px 20px;"}
+    [:input {:type "checkbox" :ng-model "project.enabled"} "{{project.name}}"]]
+   [:div.report
+    [:ul.list-unstyled
+     [:li {:ng-repeat "project in projects | filter:{enabled:true}"
+           :ng-init "args = project.name"}
+      [:br]
+      [:br]
+      [:h2 "{{args}}"]
+      [:div {:chart "openItems"}]]]]))

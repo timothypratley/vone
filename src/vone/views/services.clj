@@ -445,7 +445,7 @@
   ([]
    (let [horizon (time/years 1)
          start (time/minus (time/today) horizon)
-         result (request-rows "/Data/PrimaryWorkitems"
+         result (request-rows "/Data/PrimaryWorkitem"
                               {:sel "Owners.Name,Estimate"
                                :where (str "Owners[AssetState!='Dead'].@Count>'0';ChangeDate>'"
                                            (vone-date start) "';AssetState='Closed'")})]
@@ -695,24 +695,23 @@
                      in (and (= sprint (story "Timebox.Name"))
                              (= team (story "Team.Name"))
                              (#{64.0 128.0} (story "AssetState")))
-                     m (-> story
-                           (update-in ["Number"] link)
-                           (update-in ["ChangeDate"] readable-date))
-                     row (map m ["ChangeDate" "Number" "Name" "Estimate" "ChangedBy.Name"])]
+                     row (map story ["ChangeDate" "Number" "Name" "Estimate" "ChangedBy.Name"])]
                  (cond (and was (not in))
-                       [(dissoc stories number) (conj changes (cons (link-history "Removed" number) row))]
+                       [(dissoc stories number) (conj changes (cons "Removed" row))]
 
                        (and in (not was))
-                       [(assoc stories number story) (conj changes (cons (link-history "Added" number) row))]
+                       [(assoc stories number story) (conj changes (cons "Added" row))]
 
                        (and was in (not= (was "Estimate") (story "Estimate")))
-                       [(assoc stories number story) (conj changes (cons (link-history "Re-estimated" number) row))]
+                       [(assoc stories number story) (conj changes (cons "Re-estimated" row))]
 
                        :else
                        [stories changes])))
         events (second (reduce what [initial []] changes))]
     (cons ["Action" "Date" "Story" "Title" "Points" "By"]
-          (reverse events))))
+          (reverse (map (fn [[a b c d e f]]
+                          [(link-hisotry a c) (readable-date b) (link c) d e f])
+                        events)))))
 
 (defn- map-difference [a b]
   (reduce dissoc a (keys b)))
@@ -855,3 +854,14 @@
                    (map (fn [[date by] edit]
                           [(readable-date date) edit by])
                         meta-history edits))))))
+
+(defn openItems
+  [project]
+  (cons ["Team" "Story" "Title" "Points" "Status"]
+        (map (fn [[a b c d e]] [a (link b) c d (link-history e b)])
+             (request-rows "/Data/PrimaryWorkitem"
+                           {:sel "Team.Name,Number,Name,Estimate,Status.Name"
+                            :where (str "Scope.Name='" project
+                                        "';AssetState='Active';Status.Name!='Accepted'")
+                            :sort "Team.Name,Number"}
+                           "None"))))

@@ -11,6 +11,12 @@ angular.module('charts', [])
     hAxis: {title: "Date"},
     areaOpacity: 0.0
   },
+  openItems: {
+    visualization: "Table",
+    title: "Open Items",
+    allowHtml: true,
+    height: null
+  },
   burndown: {
     visualization: "AreaChart",
     title: "Burndown - Total ToDo Remaining",

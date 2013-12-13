@@ -148,6 +148,14 @@ function ProjectDefectRateCtrl($scope, $http, $log, $rootScope) {
   };
 }
 
+function ProjectOpenItemsCtrl($scope, $http, $log, $rootScope) {
+  $scope.today = now();
+  $scope.selectAll = function(enabled) {
+    angular.forEach($rootScope.projects, function(x) { x.enabled = enabled;});
+  };
+}
+
+
 function MembersCtrl($scope, $http, $log) {
   $http.get('json/members')
   .success(function (data) {
