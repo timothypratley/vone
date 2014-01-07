@@ -857,10 +857,10 @@
 
 (defn openItems
   [project]
-  (cons ["Team" "Story" "Title" "Points" "Status"]
-        (map (fn [[a b c d e]] [a (link b) c d (link-history e b)])
+  (cons ["Team" "Story" "Title" "Points" "Status" "Priority"]
+        (map (fn [[a b c d e f]] [a (link b) c d (link-history e b) f])
              (request-rows "/Data/PrimaryWorkitem"
-                           {:sel "Team.Name,Number,Name,Estimate,Status.Name"
+                           {:sel "Team.Name,Number,Name,Estimate,Status.Name,Priority.Name"
                             :where (str "Scope.Name='" project
                                         "';AssetState='Active';Status.Name!='Accepted'")
                             :sort "Team.Name,Number"}
