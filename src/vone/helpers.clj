@@ -70,7 +70,7 @@
 (defn tostr-ds-date
   "converts a joda time into a javascript zero based month date"
   [date]
-  (str "Date(" (time/year date) "," (dec (time/month date)) "," (time/day date) ")"))
+  (format "Date(%d,%02d,%02d)" (time/year date) (dec (time/month date)) (time/day date)))
 
 (defn readable-date
   [date]

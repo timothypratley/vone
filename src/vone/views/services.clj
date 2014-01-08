@@ -423,8 +423,7 @@
   the sum of the first two arguments, the third is the sum of the first three
   arguments, etc.
 
-  Examples:
-  (use 'incanter.core)
+  Example:
   (cumulative-sum (range 100))
   "
   ([coll]
@@ -438,10 +437,14 @@
 
 (defn- accumulate
   [s]
-  (reduce #(assoc %1 (first %2) (second %2)) (sorted-map)
-          (map vector (map first s) (cumulative-sum (map second s)))))
+  (reduce (fn [acc [date cumulative]]
+            (assoc acc date cumulative))
+          (sorted-map)
+          (map vector
+               (map (comp tostr-ds-date first) s) ;dates
+               (cumulative-sum (map second s)))))
 
-(defn- workitems
+(defn workitems
   ([]
    (let [horizon (time/years 1)
          start (time/minus (time/today) horizon)
@@ -455,11 +458,11 @@
                           estimate (second owners-estimate)]
                       (reduce #(update-in %1 [%2] (fnil + 0) estimate) m names)))
                   (sorted-map) result))))
-  ([member asset-type]
+  ([member]
    (let [horizon (time/years 1)
          since (time/minus (time/today) horizon)]
      (cons ["ChangeDate" "Estimate"]
-           (accumulate (request-rows (str "/Data/" asset-type)
+           (accumulate (request-rows "/Data/PrimaryWorkitem"
                                      {:sel "ChangeDate,Estimate"
                                       :where (str "ChangeDate>'" since
                                                   "';Owners[Name='" member
@@ -553,19 +556,35 @@
                         :where (str "Team.Name='" team
                                     "';Timebox.Name='" sprint \')}))))
 
-(defn- transform-members
-  [s]
-  (map #(clojure.set/rename-keys % {"DefaultRole.Name" :role
-                                    "DefaultRole.Order" :tier
-                                    "MemberLabels.Name" :team})
-       s))
-
 (defn members
-  "Retrieve a memberlist with roles"
-  []
-  (transform-members (request "/Data/Member"
-                              {:sel "Name,DefaultRole.Name,DefaultRole.Order,MemberLabels.Name"
-                               :where "AssetState!='Dead'"})))
+  "Retrieve a memberlist with roles and points"
+  [ignore]
+  (let [horizon (time/years 1)
+        since (time/minus (time/today) horizon)
+        all (request-rows "/Data/PrimaryWorkitem"
+                          {:sel "Owners.Name,Estimate"
+                           :where (str "ChangeDate>'" since
+                                       "';Owners.@Count>'0';AssetState='Closed'")})
+        gather-all (fn [acc [owners estimate]]
+                     (reduce (fn gather-owner [acc owner]
+                               (update-in acc [owner] (fnil + 0) estimate))
+                             acc owners))
+        points (reduce gather-all (sorted-map) all)
+        details (request-rows "/Data/Member"
+                              {:sel "Name,DefaultRole.Name,MemberLabels.Name"
+                               :where "AssetState!='Dead';AssetState!='Closed'"
+                               :sort "Name"})]
+    (cons ["Member" "Points" "Role" "Group"]
+          (for [[a b c d] details]
+            [a
+             (when-let [p (points a)]
+               (two-dec p))
+             (clojure.string/replace (str b) "Role.Name'" "")
+             (when (sequential? c)
+               (clojure.string/replace
+                (clojure.string/join "," c)
+                " Member Group"
+                ""))]))))
 
 (defn- transform-effort
   [s]

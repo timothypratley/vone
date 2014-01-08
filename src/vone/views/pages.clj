@@ -28,9 +28,9 @@
 (defn home []
   (html5
    [:head
+    [:title "Vone: Version One Custom Reporting"]
     ; When run on an intranet, IE defaults to compatibility
     ; which does not work for Google Visualization library
-    [:title "Vone: Version One Custom Reporting"]
     [:meta {:http-equiv "X-UA-Compatible"
             :content "IE=edge,chrome=1"}]
     [:meta {:name "viewport"
@@ -208,9 +208,7 @@
 (defn members []
   (html
    [:h1 "Members"]
-   [:ul
-    [:li {:ng-repeat "member in members"}
-     [:a {:href "/#/member/{{member[0]}}"} "{{member[0]}} {{member[1]}}"]]]))
+   [:div {:chart "members"}]))
 
 (defn member []
   (html

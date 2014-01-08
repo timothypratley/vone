@@ -139,15 +139,17 @@ angular.module('charts', [])
     title: "Quality",
     height: 1000
   },
+  members: {
+    visualization: "Table",
+    title: "Members",
+    height: null
+  },
   workitems: {
     visualization: "LineChart",
     title: "Workitems",
     vAxis: {
       viewWindowMode: "explicit",
-      viewWindow: {min: 0, max: 300}},
-    hAxis: {
-      viewWindowMode: "explicit",
-      viewWindow: {min: new Date(2012,0,1), max: new Date(2013,0,1)}}
+      viewWindow: {min: 0, max: 300}}
   }
 })
 .directive('chart', function(options, $log) {
