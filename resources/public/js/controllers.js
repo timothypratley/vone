@@ -157,7 +157,7 @@ function ProjectOpenItemsCtrl($scope, $http, $log, $rootScope) {
 
 
 function MembersCtrl($scope, $http, $log) {
-  $scope.args = "ignore";
+  $scope.args = "2013";
 }
 
 function MemberCtrl($scope, $routeParams, $log) {

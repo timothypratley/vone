@@ -558,33 +558,41 @@
 
 (defn members
   "Retrieve a memberlist with roles and points"
-  [ignore]
+  [^Integer year]
   (let [horizon (time/years 1)
-        since (time/minus (time/today) horizon)
+        since (time/date-time year)
+        to (time/plus since horizon)
         all (request-rows "/Data/PrimaryWorkitem"
-                          {:sel "Owners.Name,Estimate"
-                           :where (str "ChangeDate>'" since
+                          {:sel "Owners.Name,Estimate,CreatedBy.Name"
+                           :where (str "ChangeDate<'" (vone-date to)
+                                       "';ChangeDate>'" (vone-date since)
                                        "';Owners.@Count>'0';AssetState='Closed'")})
-        gather-all (fn [acc [owners estimate]]
-                     (reduce (fn gather-owner [acc owner]
-                               (update-in acc [owner] (fnil + 0) estimate))
-                             acc owners))
-        points (reduce gather-all (sorted-map) all)
+        all (remove (comp number? first) all)
+        gather-points (fn [acc [owners estimate created-by]]
+                        (reduce (fn gather-owner [acc owner]
+                                  (update-in acc [owner] (fnil + 0) estimate))
+                                acc owners))
+        points (reduce gather-points
+                       (sorted-map)
+                       all)
+        created (reduce (fn [acc [owners estimate created-by]]
+                          (if (string? created-by)
+                            (update-in acc [created-by] (fnil inc 0))
+                            acc))
+                        (sorted-map)
+                        all)
         details (request-rows "/Data/Member"
                               {:sel "Name,DefaultRole.Name,MemberLabels.Name"
                                :where "AssetState!='Dead';AssetState!='Closed'"
                                :sort "Name"})]
-    (cons ["Member" "Points" "Role" "Group"]
-          (for [[a b c d] details]
-            [a
-             (when-let [p (points a)]
-               (two-dec p))
-             (clojure.string/replace (str b) "Role.Name'" "")
-             (when (sequential? c)
-               (clojure.string/replace
-                (clojure.string/join "," c)
-                " Member Group"
-                ""))]))))
+    (cons ["Member" "Points" "CreatedCount" "Role" "Group"]
+          (for [[member role labels] details]
+            [member
+             (when-let [p (points member)] (two-dec p))
+             (when-let [c (created member)] c)
+             (clojure.string/replace (str role) "Role.Name'" "")
+             (when (sequential? labels)
+               (clojure.string/replace (clojure.string/join "," labels) " Member Group" ""))]))))
 
 (defn- transform-effort
   [s]
@@ -692,13 +700,10 @@
            ""))
 (def ^:private story-changes (memo/ttl story-changes-slow :ttl/threshold 60000))
 
-(defn- link
+(defn- links
   [number]
-  (html [:a {:href (str base-url "/assetdetail.v1?Number=" number) :target "_blank"} number]))
-
-(defn- link-history
-  [text number]
-  (html [:a {:href (str "#/history/" number) :target "_blank"} text]))
+  (html [:a {:href (str base-url "/assetdetail.v1?Number=" number) :target "_blank"} "[v1]"]
+        [:a {:href (str "#/history/" number) :target "_blank"} "[hist]"]))
 
 (defn churnStories
   "The story names added to a sprint, and removed from a sprint"
@@ -727,9 +732,9 @@
                        :else
                        [stories changes])))
         events (second (reduce what [initial []] changes))]
-    (cons ["Action" "Date" "Story" "Title" "Points" "By"]
+    (cons ["Action" "Date" "Story" "Title" "Points" "By" "Links"]
           (reverse (map (fn [[a b c d e f]]
-                          [(link-history a c) (readable-date b) (link c) d e f])
+                          [a (readable-date b) c d e f (links c)])
                         events)))))
 
 (defn- map-difference [a b]
@@ -876,8 +881,8 @@
 
 (defn openItems
   [project]
-  (cons ["Team" "Story" "Title" "Points" "Status" "Priority"]
-        (map (fn [[a b c d e f]] [a (link b) c d (link-history e b) f])
+  (cons ["Team" "Story" "Title" "Points" "Status" "Priority" "Links"]
+        (map (fn [[a b c d e f]] [a b c d e f (links b)])
              (request-rows "/Data/PrimaryWorkitem"
                            {:sel "Team.Name,Number,Name,Estimate,Status.Name,Priority.Name"
                             :where (str "Scope.Name='" project
