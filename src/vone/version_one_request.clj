@@ -28,6 +28,10 @@
                  c))
     :else x))
 
+(defn as-url
+  [query args]
+  (str base-url query \? (codec/url-decode (client/generate-query-string args))))
+
 (defn xhr
   "XmlHttpRequest from VersionOne"
   [query args]
@@ -80,7 +84,3 @@
   ([query args not-found]
    (unmap (clojure.string/split (args :sel) #",")
           (request query args not-found))))
-
-(defn as-url
-  [query args]
-  (str base-url query \? (codec/url-decode (client/generate-query-string args))))
