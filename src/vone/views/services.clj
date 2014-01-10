@@ -461,7 +461,7 @@
   ([member]
    (let [horizon (time/years 1)
          since (time/minus (time/today) horizon)]
-     (cons ["ChangeDate" "Estimate"]
+     (cons ["Date" "Cumulative Story Points"]
            (accumulate (request-rows "/Data/PrimaryWorkitem"
                                      {:sel "ChangeDate,Estimate"
                                       :where (str "ChangeDate>'" since
@@ -562,46 +562,55 @@
   (let [horizon (time/years 1)
         since (time/date-time year)
         to (time/plus since horizon)
-        all (request-rows "/Data/PrimaryWorkitem"
+        restrict (str "ChangeDate<'" (vone-date to) "';ChangeDate>'" (vone-date since) \')
+        effort (request-rows "/Data/Actual"
+                             {:sel "Member.Name,Value"
+                              :where (str restrict)})
+        entries (reduce (fn [acc [member value]]
+                          (if (string? member)
+                            (update-in acc [member] (fnil inc 0))
+                            acc))
+                        {} effort)
+        hours (reduce (fn [acc [member value]]
+                        (if (string? member)
+                          (update-in acc [member] (fnil + 0) value)
+                          acc))
+                      {} effort)
+        stories (request-rows "/Data/PrimaryWorkitem"
                           {:sel "Owners.Name,Estimate,CreatedBy.Name"
-                           :where (str "ChangeDate<'" (vone-date to)
-                                       "';ChangeDate>'" (vone-date since)
-                                       "';Owners.@Count>'0';AssetState='Closed'")})
-        all (remove (comp number? first) all)
+                           :where (str restrict ";Owners.@Count>'0';AssetState='Closed'")})
+        stories (remove (comp number? first) stories)
         gather-points (fn [acc [owners estimate created-by]]
-                        (reduce (fn gather-owner [acc owner]
+                        (reduce (fn gather-owner-points [acc owner]
                                   (update-in acc [owner] (fnil + 0) estimate))
                                 acc owners))
-        points (reduce gather-points
-                       (sorted-map)
-                       all)
+        points (reduce gather-points {} stories)
+        gather-stories (fn [acc [owners estimate created-by]]
+                         (reduce (fn gather-owner-count [acc owner]
+                                   (update-in acc [owner] (fnil inc 0)))
+                                 acc owners))
+        worked (reduce gather-stories {} stories)
         created (reduce (fn [acc [owners estimate created-by]]
                           (if (string? created-by)
                             (update-in acc [created-by] (fnil inc 0))
                             acc))
-                        (sorted-map)
-                        all)
+                        {} stories)
         details (request-rows "/Data/Member"
                               {:sel "Name,DefaultRole.Name,MemberLabels.Name"
                                :where "AssetState!='Dead';AssetState!='Closed'"
                                :sort "Name"})]
-    (cons ["Member" "Points" "CreatedCount" "Role" "Group"]
+    (cons ["Member" "Links" "Owner Points" "Owner Count" "Created Count" "Time Entries" "Total Hours" "Role" "Group"]
           (for [[member role labels] details]
             [member
+             (html [:a {:href (str "#/member/" member) :target "_blank"} "[chart]"])
              (when-let [p (points member)] (two-dec p))
+             (when-let [w (worked member)] w)
              (when-let [c (created member)] c)
+             (when-let [e (entries member)] e)
+             (when-let [h (hours member)] (two-dec h))
              (clojure.string/replace (str role) "Role.Name'" "")
              (when (sequential? labels)
                (clojure.string/replace (clojure.string/join "," labels) " Member Group" ""))]))))
-
-(defn- transform-effort
-  [s]
-  (map #(clojure.set/rename-keys % {"Value" :hours}) s))
-
-(defn effort
-  []
-  (transform-effort (request "/Data/Actual"
-                             {:sel "Member.Name,Value"})))
 
 ; TODO
 #_(defn allocation
@@ -702,8 +711,8 @@
 
 (defn- links
   [number]
-  (html [:a {:href (str base-url "/assetdetail.v1?Number=" number) :target "_blank"} "[v1]"]
-        [:a {:href (str "#/history/" number) :target "_blank"} "[hist]"]))
+  (html [:a {:href (str "#/history/" number) :target "_blank"} "[hist]"]
+        [:a {:href (str base-url "/assetdetail.v1?Number=" number) :target "_blank"} "[v1]"]))
 
 (defn churnStories
   "The story names added to a sprint, and removed from a sprint"

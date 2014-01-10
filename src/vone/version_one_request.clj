@@ -40,7 +40,7 @@
       (catch Exception e
         ;TODO: treat 401 as an expected failure, no need to log
         ;... but do want to log other errors
-        (println "xhr failed (" (first (params :basic-auth)) \@ url args \))
+        (println "xhr failed (" (first (params :basic-auth)) \@ (as-url query args) \))
         (throw e)))))
 
 (defn clean-xml
