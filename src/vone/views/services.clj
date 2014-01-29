@@ -397,7 +397,6 @@
         c (count-to sprint (map first estimates))
         estimates (take-last 5 (take c estimates))
         estimates (with-capacity team estimates)
-        _ (println estimates)
         estimates (with-ratios estimates)]
     (if (not-empty estimates)
       (transpose
@@ -898,3 +897,37 @@
                                         "';AssetState='Active';Status.Name!='Accepted'")
                             :sort "Team.Name,Number"}
                            "None"))))
+
+;; might be interesting to get all rows and allow the user to break down by team/sprint/etc
+#_(defn effort-allocation
+  "Retrieves a table of effort recorded per team sprint"
+  [team sprint]
+  (let [actuals (request-rows "/Data/Actual"
+                              {:sel "Value,Workitem.AssetType,Workitem.Parent.AssetType"
+                               :where (str "Timebox.Name='" sprint "';Team.Name='" team \')})
+        hours (reduce map-add-hours {} actuals)]
+    (cons ["Member" "Points" "Hours"]
+          (for [member (apply sorted-set (concat (keys points) (keys hours)))]
+            [member (get points member 0) (two-dec (get hours member 0))]))))
+
+
+(defn effortAllocation
+  "Retrieves a table of effort recorded per team sprint"
+  [team]
+  (let [categories [["Story" ";Reference!=''"]
+                    ["Story" ";Reference=''"]
+                    ["Defect" nil]
+                    ["TestSet" nil]]
+        fields (cons "Name"
+                     (for [[asset-type condition] categories]
+                       (str "Workitems:" asset-type
+                            "[Team.Name='" team "';AssetState!='Dead'"
+                            condition "]" (when (not= "TestSet" asset-type) ".Children")
+                            ".Actuals.Value.@Sum")))]
+    (cons ["Sprint" "Billable" "Enhancement" "Defect" "Regression Testing"]
+          (request-rows "/Data/Timebox"
+                        {:sel (apply str (interpose \, fields))
+                         :where (str "Workitems[Team.Name='" team "'].Children.Actuals.Value.@Sum>'0'"
+                                     ";BeginDate<'" (time/today)
+                                     "';BeginDate>'" (time/minus (time/today) (time/years 1)) \')
+                         :sort "Name"}))))

@@ -4,6 +4,14 @@ angular.module('charts', [])
     height: 500,
     allowHtml: true
   },
+  effortAllocation: {
+    visualization: "AreaChart",
+    title: "Effort Allocation",
+    vAxis: {title: "Hours", minValue: 0},
+    hAxis: {title: "Sprint"},
+    isStacked: true,
+    areaOpacity: 0.8
+  },
   defectRate: {
     visualization: "AreaChart",
     title: "Defect Rate",

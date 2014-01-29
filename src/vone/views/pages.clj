@@ -71,6 +71,7 @@
         [:li (link-to "#/status" "Status")]
         [:li (link-to "#/projectdefectrate" "Project Defect Rate")]
         [:li (link-to "#/projectopenitems" "Open Items")]
+        [:li (link-to "#/teamquality" "Team Quality")]
         [:li (link-to "#/history" "Story History")]]
        [:ul.nav.navbar-nav.navbar-right.ng-cloak
         [:li.login {:ng-show "!username"}
@@ -260,3 +261,19 @@
       [:br]
       [:h2 "{{args}}"]
       [:div {:chart "openItems"}]]]]))
+
+(defn teamquality []
+  (html
+   [:h1 "Team Quality"]
+   select-buttons
+   [:label {:ng-repeat "team in teams"
+            :style "margin: 0px 20px;"}
+    [:input {:type "checkbox" :ng-model "team.enabled"} "{{team.name}}"]]
+   [:div.report
+    [:ul.list-unstyled
+     [:li {:ng-repeat "team in teams | filter:{enabled:true}"
+           :ng-init "args = team.name"}
+      [:br]
+      [:br]
+      [:h2 "{{args}}"]
+      [:div {:chart "effortAllocation"}]]]]))

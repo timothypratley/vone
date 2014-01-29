@@ -141,6 +141,14 @@ function OverallCtrl($scope, $http, $log) {
 
 }
 
+function TeamQualityCtrl($scope, $http, $log, $rootScope) {
+  $scope.today = now();
+
+  $scope.selectAll = function(enabled) {
+    angular.forEach($rootScope.teams, function(x) { x.enabled = enabled;});
+  };
+}
+
 function ProjectDefectRateCtrl($scope, $http, $log, $rootScope) {
   $scope.today = now();
   $scope.selectAll = function(enabled) {
@@ -154,7 +162,6 @@ function ProjectOpenItemsCtrl($scope, $http, $log, $rootScope) {
     angular.forEach($rootScope.projects, function(x) { x.enabled = enabled;});
   };
 }
-
 
 function MembersCtrl($scope, $http, $log) {
   $scope.args = "2013";

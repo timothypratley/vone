@@ -19,6 +19,8 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
         {templateUrl: "fabel", controller: FabelCtrl})
   .when("/status",
         {templateUrl: "status", controller: StatusCtrl})
+  .when("/teamquality",
+        {templateUrl: "teamquality", controller: TeamQualityCtrl})
   .when("/projectdefectrate",
         {templateUrl: "projectdefectrate", controller: ProjectDefectRateCtrl})
   .when("/projectopenitems",
@@ -62,6 +64,14 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
     $log.info("Got team sprints");
     $log.info(data);
     $rootScope.teamSprints = data;
+    $rootScope.teams = _.chain($rootScope.teamSprints)
+    .map(function (sprints, team) {
+      return {name: team, enabled: false};
+    })
+    .compact()
+    .sortBy(function (x) { return x.name; })
+    .value();
+    $log.info($rootScope.teams);
   })
   .error($log.error);
   $http.get("json/current-sprints")
