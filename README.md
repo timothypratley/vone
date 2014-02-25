@@ -31,6 +31,11 @@ To generate a war file for deployment:
 * edit war/WEB-INF/appengine-web.xml inc version
 * appcfg.sh update war
 
+### Running tests
+
+`lein midje`
+
+
 ## License
 
 Copyright (C) 2011

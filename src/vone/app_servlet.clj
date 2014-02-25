@@ -12,8 +12,8 @@
             ;[appengine-magic.multipart-params :refer [wrap-multipart-params]]
             ;[appengine-magic.core :as gae]
             [routegen.core :refer :all]
-            [vone.views.pages :refer [home login]]
-            [vone.views.services]))
+            [vone.pages :refer [home login]]
+            [vone.services]))
 
 
 (defn with-401
@@ -32,13 +32,13 @@
 (def api-routes
   (apply routes
          (concat
-          (path-routes 'vone.views.services)
-          (post-routes 'vone.views.services))))
+          (path-routes 'vone.services)
+          (post-routes 'vone.services))))
 
 (def site-routes
   (apply routes
          (concat
-          (page-routes 'vone.views.pages)
+          (page-routes 'vone.pages)
           [(GET "/" [] (home))
            ; TODO: When deployed as a WAR, you can get empty paths that need to be hardcoded to the app
            (GET "" [] (redirect "/vone/"))
@@ -60,4 +60,5 @@
 ;(defn -service [this request response]
 ;  ((make-servlet-service-method app-handler) this request response))
 
-
+
+

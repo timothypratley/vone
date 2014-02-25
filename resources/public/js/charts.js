@@ -126,9 +126,9 @@ angular.module('charts', [])
     title: "Roadmap",
     height: 1000
   },
-  fabel: {
+  fable: {
     visualization: "Table",
-    title: "Fabel",
+    title: "Fable",
     height: 1000
   },
   storyFullHistory: {

@@ -133,7 +133,7 @@ function RoadmapCtrl($scope, $http, $log) {
 
 }
 
-function FabelCtrl($scope, $http, $log) {
+function FableCtrl($scope, $http, $log) {
 
 }
 

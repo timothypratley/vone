@@ -1,4 +1,4 @@
-(ns vone.views.pages
+(ns vone.pages
   (:require [noir.session :as session]
             [noir.response :as response]
             [hiccup.core :refer :all]
@@ -67,7 +67,7 @@
         ;TODO: use angular to set the active menu
         [:li (link-to "#/retro" "Retrospective")]
         [:li (link-to "#/roadmap" "Roadmap")]
-        [:li (link-to "#/fabel" "Fabel")]
+        [:li (link-to "#/fable" "Fable")]
         [:li (link-to "#/status" "Status")]
         [:li (link-to "#/projectdefectrate" "Project Defect Rate")]
         [:li (link-to "#/projectopenitems" "Open Items")]
@@ -192,11 +192,11 @@
    (link-to "/csv/roadmap" "csv")
    [:div {:roadmap true}]))
 
-(defn fabel []
+(defn fable []
   (html
-   [:h1 "Fabel"]
-   (link-to "/csv/fabel" "csv")
-   [:div {:fabel true}]))
+   [:h1 "Fable"]
+   (link-to "/csv/fable" "csv")
+   [:div {:fable true}]))
 
 (defn overall []
   (html

@@ -15,8 +15,8 @@ angular.module('vone', ['http-auth-interceptor', 'charts'])
         {templateUrl: "retro", controller: RetroCtrl})
   .when("/roadmap",
         {templateUrl: "roadmap", controller: RoadmapCtrl})
-  .when("/fabel",
-        {templateUrl: "fabel", controller: FabelCtrl})
+  .when("/fable",
+        {templateUrl: "fable", controller: FableCtrl})
   .when("/status",
         {templateUrl: "status", controller: StatusCtrl})
   .when("/teamquality",

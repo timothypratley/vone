@@ -129,4 +129,4 @@
         added (for [k added-keys] [k (after k)])
         changed (for [k changed-keys] [k (before k) (after k)])]
     [removed-keys added changed]))
-;(fact (#'vone.views.services/exdiff {:a 1 :b 2 :c 3} {:b 2 :c 4 :d 5}) => [#{:a} [[:d 5]] [:c 3 4]])
+;(fact (exdiff {:a 1 :b 2 :c 3} {:b 2 :c 4 :d 5}) => [#{:a} [[:d 5]] [:c 3 4]])

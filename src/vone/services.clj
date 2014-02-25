@@ -1,4 +1,4 @@
-(ns vone.views.services
+(ns vone.services
   (:require [clojure.core.memoize :as memo]
             [vone.version-one-request :refer :all]
             [vone.helpers :refer :all]
@@ -320,7 +320,7 @@
 
 ;https://www3.v1host.com/Tideworks/story.mvc/Summary?oidToken=Story%3A
 ;+id
-(defn fabel
+(defn fable
   "Identifies stories that have invalid data"
   []
   (let [stories (request "/Data/Story"
@@ -889,10 +889,10 @@
 
 (defn openItems
   [project]
-  (cons ["Team" "Story" "Title" "Points" "Status" "Priority" "Links"]
-        (map (fn [[a b c d e f]] [a b c d e f (links b)])
+  (cons ["Team" "Story" "Title" "Points" "Status" "Priority" "Sprint" "Links"]
+        (map (fn [[a b c d e f g]] [a b c d e f g (links b)])
              (request-rows "/Data/PrimaryWorkitem"
-                           {:sel "Team.Name,Number,Name,Estimate,Status.Name,Priority.Name"
+                           {:sel "Team.Name,Number,Name,Estimate,Status.Name,Priority.Name,Timebox.Name"
                             :where (str "Scope.Name='" project
                                         "';AssetState='Active';Status.Name!='Accepted'")
                             :sort "Team.Name,Number"}
@@ -931,3 +931,5 @@
                                      ";BeginDate<'" (time/today)
                                      "';BeginDate>'" (time/minus (time/today) (time/years 1)) \')
                          :sort "Name"}))))
+
+(effortAllocation "TC Sharks")
