@@ -1,9 +1,77 @@
 (ns vone.scratch
   (:require [clj-time.core :as time]
+            [clj-diff.core :refer :all]
             [clojure.repl :refer :all]
+            [clojure.data]
             [vone.views.services :refer :all]
             [vone.helpers :refer :all]
             [vone.version-one-request :refer :all]))
+
+
+(diff {"Owners" ["Tim"]} {"Owners" ["Tim" "Dwayne"]})
+(clojure.data/diff {"Owners" ["Tim"]} {"Owners" ["Tim" "Dwayne"]})
+(diff ["Tim"] ["Tim" "Dwayne"])
+(clojure.data/diff ["Tim"] ["Tim" "Dwayne"])
+(clojure.data/diff ["Tim"] [nil "Dwayne"])
+(diff "The quick brown fox" "The brown ")
+(diff "The quick brown fox" "The fun quick brown fox box")
+(clojure.data/diff (seq "The quick brown fox") (seq "The slow brown fox"))
+(type (clojure.set/difference (sorted-set 1 2 3) (sorted-set 2 3 4)))
+
+(conj [1] 2)
+
+(defn discont
+  [s]
+  (cons (first s)
+        (map second (remove (fn [[a b]] (= b (inc a)))
+                            (map vector s (rest s))))))
+
+(defn runs
+  "Splits a sequence into incremental runs"
+  [[a & more]]
+  (when a
+    (let [run-helper (fn [[aggregate from previous] current]
+                       (if (= previous (dec current))
+                         [aggregate from current]
+                         [(conj aggregate [from previous]) current current]))
+          [aggregate from current] (reduce run-helper [[] a a] more)]
+      (conj aggregate [from current]))))
+
+(runs [4 5 6 7 8 16 17 18])
+
+(runs [])
+
+(defn bar [st1 st2]
+  (let [{added :+ removed :-} (diff st1 st2)
+        rems (into {} (for [[start end] (runs removed)]
+                        [start (subs st1 start (inc end))]))
+        adds (into {} (for [[start & more] added]
+                        [(inc start) (apply str more)]))
+        rs (set (keys rems))
+        as (set (keys adds))
+        cs (clojure.set/intersection rs as)
+        all (sort (clojure.set/union rs as))]
+    (for [k all]
+      (cond (cs k) (str "Replaced: " (rems k) " With: " (adds k))
+            (rs k) (str "Deleted: " (rems k))
+            (as k) (str "Inserted: " (adds k))))))
+
+(bar "The quick brown fox" "T slow brown fox box")
+
+(foo [4 5 6 7 8 16 17 18])
+
+(type (set [1]))
+(type (sorted-set 1))
+
+(diff {:a 1 :b 2} {:b 2 :a 1})
+(diff (sort {:a 1 :b 2}) (sort {:b 2 :a 1}))
+
+(clojure.data/diff #{:a :b :c} #{:b :c :d})
+
+(str "hi" (seq ["1" "2"]))
+
+(storyFullHistory "B-22668")
+
 
 (storyChurnHistory "D-19903" "TC Sharks" "TC1316")
 
