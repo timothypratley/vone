@@ -1,4 +1,4 @@
-(ns vone.views.pages
+(ns vone.pages
   (:require [noir.session :as session]
             [noir.response :as response]
             [hiccup.core :refer :all]
@@ -28,9 +28,9 @@
 (defn home []
   (html5
    [:head
+    [:title "Vone: Version One Custom Reporting"]
     ; When run on an intranet, IE defaults to compatibility
     ; which does not work for Google Visualization library
-    [:title "Vone: Version One Custom Reporting"]
     [:meta {:http-equiv "X-UA-Compatible"
             :content "IE=edge,chrome=1"}]
     [:meta {:name "viewport"
@@ -67,10 +67,11 @@
         ;TODO: use angular to set the active menu
         [:li (link-to "#/retro" "Retrospective")]
         [:li (link-to "#/roadmap" "Roadmap")]
-        [:li (link-to "#/fabel" "Fabel")]
+        [:li (link-to "#/fable" "Fable")]
         [:li (link-to "#/status" "Status")]
         [:li (link-to "#/projectdefectrate" "Project Defect Rate")]
         [:li (link-to "#/projectopenitems" "Open Items")]
+        [:li (link-to "#/teamquality" "Team Quality")]
         [:li (link-to "#/history" "Story History")]]
        [:ul.nav.navbar-nav.navbar-right.ng-cloak
         [:li.login {:ng-show "!username"}
@@ -191,11 +192,11 @@
    (link-to "/csv/roadmap" "csv")
    [:div {:roadmap true}]))
 
-(defn fabel []
+(defn fable []
   (html
-   [:h1 "Fabel"]
-   (link-to "/csv/fabel" "csv")
-   [:div {:fabel true}]))
+   [:h1 "Fable"]
+   (link-to "/csv/fable" "csv")
+   [:div {:fable true}]))
 
 (defn overall []
   (html
@@ -208,9 +209,7 @@
 (defn members []
   (html
    [:h1 "Members"]
-   [:ul
-    [:li {:ng-repeat "member in members"}
-     [:a {:href "/#/member/{{member[0]}}"} "{{member[0]}} {{member[1]}}"]]]))
+   [:div {:chart "members"}]))
 
 (defn member []
   (html
@@ -262,3 +261,19 @@
       [:br]
       [:h2 "{{args}}"]
       [:div {:chart "openItems"}]]]]))
+
+(defn teamquality []
+  (html
+   [:h1 "Team Quality"]
+   select-buttons
+   [:label {:ng-repeat "team in teams"
+            :style "margin: 0px 20px;"}
+    [:input {:type "checkbox" :ng-model "team.enabled"} "{{team.name}}"]]
+   [:div.report
+    [:ul.list-unstyled
+     [:li {:ng-repeat "team in teams | filter:{enabled:true}"
+           :ng-init "args = team.name"}
+      [:br]
+      [:br]
+      [:h2 "{{args}}"]
+      [:div {:chart "effortAllocation"}]]]]))

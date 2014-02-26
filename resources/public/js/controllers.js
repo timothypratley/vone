@@ -133,12 +133,20 @@ function RoadmapCtrl($scope, $http, $log) {
 
 }
 
-function FabelCtrl($scope, $http, $log) {
+function FableCtrl($scope, $http, $log) {
 
 }
 
 function OverallCtrl($scope, $http, $log) {
 
+}
+
+function TeamQualityCtrl($scope, $http, $log, $rootScope) {
+  $scope.today = now();
+
+  $scope.selectAll = function(enabled) {
+    angular.forEach($rootScope.teams, function(x) { x.enabled = enabled;});
+  };
 }
 
 function ProjectDefectRateCtrl($scope, $http, $log, $rootScope) {
@@ -155,18 +163,13 @@ function ProjectOpenItemsCtrl($scope, $http, $log, $rootScope) {
   };
 }
 
-
 function MembersCtrl($scope, $http, $log) {
-  $http.get('json/members')
-  .success(function (data) {
-    $scope.members = angular.fromJson(data);
-  })
-  .error($log);
+  $scope.args = "2013";
 }
 
 function MemberCtrl($scope, $routeParams, $log) {
   $scope.args = $routeParams.member;
-  $scope.member = $routeParams.member
+  $scope.member = $routeParams.member;
 }
 
 function RankingsCtrl($scope, $http, $log) {

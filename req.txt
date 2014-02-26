@@ -1,0 +1,22 @@
+does the story have a CHG
+group by epic (before and after)
+
+was the story assigned during the sprint
+
+what stories were unassigned from the sprint?
+how many points split or rolled?
+what was the commitment at start and finish?
+
+
+how many defects were found during this sprint?
+what are the sources of defects?
+how many failed reviews
+
+
+What was done
+What is projected
+
+
+route per function? what about "" or "/"?
+How do you route arguments?
+unnamed, named, json

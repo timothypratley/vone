@@ -70,7 +70,7 @@
 (defn tostr-ds-date
   "converts a joda time into a javascript zero based month date"
   [date]
-  (str "Date(" (time/year date) "," (dec (time/month date)) "," (time/day date) ")"))
+  (format "Date(%d,%02d,%02d)" (time/year date) (dec (time/month date)) (time/day date)))
 
 (defn readable-date
   [date]
@@ -129,4 +129,4 @@
         added (for [k added-keys] [k (after k)])
         changed (for [k changed-keys] [k (before k) (after k)])]
     [removed-keys added changed]))
-;(fact (#'vone.views.services/exdiff {:a 1 :b 2 :c 3} {:b 2 :c 4 :d 5}) => [#{:a} [[:d 5]] [:c 3 4]])
+;(fact (exdiff {:a 1 :b 2 :c 3} {:b 2 :c 4 :d 5}) => [#{:a} [[:d 5]] [:c 3 4]])

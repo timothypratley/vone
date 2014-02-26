@@ -4,6 +4,14 @@ angular.module('charts', [])
     height: 500,
     allowHtml: true
   },
+  effortAllocation: {
+    visualization: "AreaChart",
+    title: "Effort Allocation",
+    vAxis: {title: "Hours", minValue: 0},
+    hAxis: {title: "Sprint"},
+    isStacked: true,
+    areaOpacity: 0.8
+  },
   defectRate: {
     visualization: "AreaChart",
     title: "Defect Rate",
@@ -118,9 +126,9 @@ angular.module('charts', [])
     title: "Roadmap",
     height: 1000
   },
-  fabel: {
+  fable: {
     visualization: "Table",
-    title: "Fabel",
+    title: "Fable",
     height: 1000
   },
   storyFullHistory: {
@@ -139,15 +147,17 @@ angular.module('charts', [])
     title: "Quality",
     height: 1000
   },
+  members: {
+    visualization: "Table",
+    title: "Members",
+    height: null
+  },
   workitems: {
     visualization: "LineChart",
     title: "Workitems",
     vAxis: {
       viewWindowMode: "explicit",
-      viewWindow: {min: 0, max: 300}},
-    hAxis: {
-      viewWindowMode: "explicit",
-      viewWindow: {min: new Date(2012,0,1), max: new Date(2013,0,1)}}
+      viewWindow: {min: 0, max: 300}}
   }
 })
 .directive('chart', function(options, $log) {
