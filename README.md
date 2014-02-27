@@ -4,6 +4,7 @@ Custom reporting for Version One.
 
 Hosted: http://vonespy.appspot.com/
 
+
 ## Usage
 
 Create a vone.properties file containing:
@@ -19,10 +20,12 @@ Install [Leiningen](https://github.com/technomancy/leiningen)
 lein ring server
 ```
 
+
 ### Tomcat install
 
 To generate a war file for deployment:
 `lein ring uberwar vone.war`
+
 
 ### Google App Engine: vonespy.appspot.com
 
@@ -30,6 +33,7 @@ To generate a war file for deployment:
 * `lein appengine-prepare`
 * edit war/WEB-INF/appengine-web.xml inc version
 * appcfg.sh update war
+
 
 ### Running tests
 
@@ -40,6 +44,7 @@ To generate a war file for deployment:
 
 Copyright (C) 2011
 Distributed under the Eclipse Public License, the same as Clojure.
+
 
 ## Development notes
 
@@ -55,3 +60,5 @@ Create a function which will transform the results (results are processed into a
 (in this case we might output a table of odd numbered stories and even numbered stories)
 Then adding a frontend component with its datasource pointed at the vone API.
 
+I wrote a blog post that walks through the important parts of the code:
+http://timothypratley.blogspot.com/2014/02/custom-reporting-of-versionone-data-in_27.html
