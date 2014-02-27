@@ -55,12 +55,9 @@
 (defn xml-collapse
   "Converts XML into a map"
   [x not-found]
-  (try
-    (-> (java.io.ByteArrayInputStream. (.getBytes (clean-xml x) "UTF8"))
-        xml/parse
-        (collapse not-found))
-    (catch Exception e
-      (throw e))))
+  (-> (java.io.ByteArrayInputStream. (.getBytes (clean-xml x) "UTF8"))
+      xml/parse
+      (collapse not-found)))
 
 (defn request
   "Makes an xml http request and collapses the body"

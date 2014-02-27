@@ -7,6 +7,15 @@
             [vone.helpers :refer :all]
             [vone.version-one-request :refer :all]))
 
+(openItems "TC5.0.1")
+
+(as-url "/Data/PrimaryWorkitem"
+        {:sel "Team.Name,Number,Name,Estimate,Status.Name,Priority.Name,Timebox.Name"
+         :where (str "Scope.Name='TC5.0.1';AssetState='Active';Status.Name!='Accepted'")
+         :sort "Team.Name,Number"})
+
+(xhr )
+
 
 (diff {"Owners" ["Tim"]} {"Owners" ["Tim" "Dwayne"]})
 (clojure.data/diff {"Owners" ["Tim"]} {"Owners" ["Tim" "Dwayne"]})

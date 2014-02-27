@@ -186,8 +186,7 @@ angular.module('charts', [])
         }
       });
     }
-    // TODO: don't really want to watch
-    scope.$watch("sprint", query, true);
+    scope.$watch("args", query, true);
   };
 })
 .directive('roadmap', function(options, $log, $http) {
