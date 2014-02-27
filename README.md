@@ -7,7 +7,7 @@ Hosted: http://vonespy.appspot.com/
 
 ## Usage
 
-Create a vone.properties file containing:
+Create a resources/vone.properties file containing:
 ```java
 username = username
 password = password
