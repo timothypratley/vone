@@ -49,7 +49,7 @@
   (index-sprints
    (request-rows "/Data/Team"
                  {:sel "Name,Workitems:PrimaryWorkitem.Timebox.Name"
-                  :sort "Name"})))
+                  :sort "Name"} "None")))
 
 (defn current-sprints
   "Retrieves current sprints"
